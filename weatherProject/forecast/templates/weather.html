@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link rel="icon" href="{% static 'img/site-pic.ico' %}" type="image/icon type"/>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"/>
+    <title>Weather Forecast</title>
+</head>
+<body>
+    <main class="{{description}}">
+        <section class="side-container">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="search-container">
+                    <div style="width: 22px; height: 22px; color: white;" class="weather-icon">
+                        <i class="bi bi-cloud-fog"></i>
+                    </div>
+                    <input
+                        type="text"
+                        name="city"
+                        class="geo-input"
+                        placeholder="ex. Colombo"
+                        value="{{ location }}"
+                    />
+                    <button class="search-button">
+                        <div style="width: 22px; height: 22px; color: white;">
+                            <i class="bi bi-search"></i>
+                        </div>
+                    </button>
+                </div>
+            </form>
+            <div class="day-stats">
+                <h2 class="day-stats__temperature">
+                    <span class="day-stats__temperature_value">{{ current_temp }}</span>°
+                </h2>
+                <h3 class="day-stats__feelslike">
+                    Feels like:&nbsp&nbsp<span class="day-stats__feelslike_value">{{ feels_like }}</span>°
+                </h3>
+                <ul class="day-stats_conditions">
+                    <li>
+                        <p class="day-stats_condition">
+                            <span class="day-stats__humidity">{{ humidity }}</span>%
+                        </p>
+                        <p class="day-stats__condition_text">of humidity</p>
+                    </li>
+                    <li>
+                        <p class="day-stats_condition">
+                            <span class="day-stats__clouds">{{ clouds }}</span>%
+                        </p>
+                        <p class="day-stats__condition_text">of Clouds</p>
+                    </li>
+                </ul>
+            </div>
+            <img src="{% static 'img/side-blur.png' %}" class="side-blur" alt="blur"/>
+        </section>
+
+        <section class="main-container">
+            <h4 class="secondary-title">Weather Forecast</h4>
+            <h1 class="weather__primary-title">{{ description}}</h1>
+            <div class="weather__location">
+                <div style="width: 15px; height: 15px; color: white;" class="location-icon">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <p class="weather__location-text">
+                    <span class="weather__location-city">{{ city }}</span>
+                    <span class="weather__location-country">{{ country }}</span>
+                    <span class="weather__location-date">{{ time }}</span>
+                </p>
+            </div>
+            <p class="weather__primary-stats">
+                Wind
+                <span class="weatherWindKph">{{ wind }}</span> kilometers per hours. pressure 
+                is <span class="weatherPressure">{{ pressure }}</span> mb. Visibility is 
+                <span class="weatherSnow">{{ visibiltity }}</span>. Maximum temperature is 
+                <span class="weatherMaxTemp">{{ MaxTemp }}</span>°. Minimum temperature is 
+                <span class="weatherMinTemp">{{ MinTemp}}</span>°.
+            </p>
+        </section>
+    </main>
+</body>
+</html>
