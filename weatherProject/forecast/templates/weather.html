@@ -78,7 +78,60 @@
                 <span class="weatherMaxTemp">{{ MaxTemp }}</span>°. Minimum temperature is 
                 <span class="weatherMinTemp">{{ MinTemp}}</span>°.
             </p>
+
+            <ul class="forecast">
+                <li class="forecast_item">
+                    <p class="forecast-time">{{ time1 }}</p>
+                    <p class="forecast-temperature">
+                        &nbsp;<span class="forecast-temperatureValue">{{ temp1 }}</span>°
+                    </p>
+                    <p class="forecastWindText">
+                        Humidity: <span class="forecast-humidityValue">{{ hum1 }}</span>
+                    </p>
+                </li>
+                <li class="forecast_item">
+                    <p class="forecast-time">{{ time2 }}</p>
+                    <p class="forecast-temperature">
+                        &nbsp;<span class="forecast-temperatureValue">{{ temp2 }}</span>°
+                    </p>
+                    <p class="forecastWindText">
+                        Humidity: <span class="forecast-humidityValue">{{ hum2 }}</span>
+                    </p>
+                </li>
+                <li class="forecast_item">
+                    <p class="forecast-time">{{ time3 }}</p>
+                    <p class="forecast-temperature">
+                        &nbsp;<span class="forecast-temperatureValue">{{ temp3 }}</span>°
+                    </p>
+                    <p class="forecastWindText">
+                        Humidity: <span class="forecast-humidityValue">{{ hum3 }}</span>
+                    </p>
+                </li>
+                <li class="forecast_item">
+                    <p class="forecast-time">{{ time4 }}</p>
+                    <p class="forecast-temperature">
+                        &nbsp;<span class="forecast-temperatureValue">{{ temp4 }}</span>°
+                    </p>
+                    <p class="forecastWindText">
+                        Humidity: <span class="forecast-humidityValue">{{ hum4 }}</span>
+                    </p>
+                </li>
+                <li class="forecast_item">
+                    <p class="forecast-time">{{ time5 }}</p>
+                    <p class="forecast-temperature">
+                        &nbsp;<span class="forecast-temperatureValue">{{ temp5 }}</span>°
+                    </p>
+                    <p class="forecastWindText">
+                        Humidity: <span class="forecast-humidityValue">{{ hum5 }}</span>
+                    </p>
+                </li>
+
+                <canvas id="chart" height="45px"></canvas>
+            </ul>
         </section>
     </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="{% static 'js/chartSetup.js' %}"></script>
 </body>
 </html>
