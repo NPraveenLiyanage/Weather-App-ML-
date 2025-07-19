@@ -116,128 +116,96 @@ def predict_future(model, current_value):
 
 #Weather analysis function
 def weather_view(request):
-        if request.method == 'POST':
-            city = request.POST.get('city')
+    if request.method == 'POST':
+        city = request.POST.get('city')
+        error_message = None
+        current_weather = None
+        try:
             current_weather = fetch_current_weather(city)
-
-            #load historical data
+        except Exception as e:
+            error_message = "Invalid city name or unable to fetch weather data. Please enter a valid city."
+        if not current_weather or 'city' not in current_weather:
+            error_message = "Invalid city name or unable to fetch weather data. Please enter a valid city."
+        if error_message:
+            return render(request, 'weather.html', {'error_message': error_message})
+        try:
             csv_path = os.path.join('C:\\Users\\lnipu\\mern projects\\Weather-App(ML)\\weather.csv')
             data = read_historical_data(csv_path)
-
-                #prepare and train the rain prediction model
-
             X, y, le = prepare_data(data)
-            rain_model = train_rain_model(X, y)  
-
-            #map wind direction to campass points
+            rain_model = train_rain_model(X, y)
             wind_deg = current_weather['wind_gust_dir'] % 360
             compass_points = [
-                        ("N", 0, 11.25), ("NNE", 11.25, 33.75), ("NE", 33.75, 56.25),
-                        ("ENE", 56.25, 78.75), ("E", 78.75, 101.25), ("ESE", 101.25, 123.75),
-                        ("SE", 123.75, 146.25), ("SSE", 146.25, 168.75), ("S", 168.75, 191.25),
-                        ("SSW", 191.25, 213.75), ("SW", 213.75, 236.25), ("WSW", 236.25, 258.75),
-                        ("W", 258.75, 281.25), ("WNW", 281.25, 303.75), ("NW", 303.75, 326.25),
-                        ("NNW", 326.25, 348.75) 
-                ]
-
-            # Corrected comparison and added a default value for next()
+                ("N", 0, 11.25), ("NNE", 11.25, 33.75), ("NE", 33.75, 56.25),
+                ("ENE", 56.25, 78.75), ("E", 78.75, 101.25), ("ESE", 101.25, 123.75),
+                ("SE", 123.75, 146.25), ("SSE", 146.25, 168.75), ("S", 168.75, 191.25),
+                ("SSW", 191.25, 213.75), ("SW", 213.75, 236.25), ("WSW", 236.25, 258.75),
+                ("W", 258.75, 281.25), ("WNW", 281.25, 303.75), ("NW", 303.75, 326.25),
+                ("NNW", 326.25, 348.75)
+            ]
             compass_direction = next((point for point, start, end in compass_points if start < wind_deg < end), "Unknown")
-
-            # Handle the case where compass_direction is "Unknown"
             if compass_direction != "Unknown" and compass_direction in le.classes_:
-                    compass_direction_encoded = le.transform([compass_direction])[0]
+                compass_direction_encoded = le.transform([compass_direction])[0]
             else:
-                    compass_direction_encoded = -1 # Or another value indicating unknown direction
-        
+                compass_direction_encoded = -1
             current_data = {
-                    'MinTemp': current_weather['temp_min'],
-                    'MaxTemp': current_weather['temp_max'],
-                    'WindGustDir': compass_direction_encoded,
-                    'WindGustSpeed': current_weather['wind_gust_speed'], # Corrected key here
-                    'Humidity': current_weather['humidity'],
-                    'Pressure': current_weather['pressure'],
-                    'Temp': current_weather['current_temp'],
-                } 
-
-            current_df = pd.DataFrame([current_data]) 
-
-            #rain prediction
-
-            rain_prediction = rain_model.predict(current_df)[0] 
-
-                #prepare regression model for temp and humidity
-
+                'MinTemp': current_weather['temp_min'],
+                'MaxTemp': current_weather['temp_max'],
+                'WindGustDir': compass_direction_encoded,
+                'WindGustSpeed': current_weather['wind_gust_speed'],
+                'Humidity': current_weather['humidity'],
+                'Pressure': current_weather['pressure'],
+                'Temp': current_weather['current_temp'],
+            }
+            current_df = pd.DataFrame([current_data])
+            rain_prediction = rain_model.predict(current_df)[0]
             X_temp, y_temp = prepare_regression_data(data, 'Temp')
-            X_hum, y_hum = prepare_regression_data(data, 'Humidity') 
-
+            X_hum, y_hum = prepare_regression_data(data, 'Humidity')
             temp_model = train_regression_model(X_temp, y_temp)
-            hum_model = train_regression_model(X_hum, y_hum)   
-
-                #predict future temp and humidity
-
-            future_temp = predict_future(temp_model, current_weather['temp_min']) 
+            hum_model = train_regression_model(X_hum, y_hum)
+            future_temp = predict_future(temp_model, current_weather['temp_min'])
             future_humidity = predict_future(hum_model, current_weather['humidity'])
-        
-                #prepare time for future prediction
-
-            timezone = pytz.timezone('Asia/Kolkata')
-            now = datetime.now(timezone) 
-            next_hour = now + timedelta(hours=1) 
-            next_hour = next_hour.replace(minute=0, second=0, microsecond=0)   
             timezone = pytz.timezone('Asia/Kolkata')
             now = datetime.now(timezone)
-            next_hour = now + timedelta(hours=1) 
+            next_hour = now + timedelta(hours=1)
             next_hour = next_hour.replace(minute=0, second=0, microsecond=0)
-
-                # Corrected date formatting for future_times
-            future_times = [(next_hour + timedelta(hours=i)).strftime("%H:00") for i in range(5)] 
-
-                #store each value seperately
-
-            time1, time2, time3, time4, time5 = future_times 
+            future_times = [(next_hour + timedelta(hours=i)).strftime("%H:00") for i in range(5)]
+            time1, time2, time3, time4, time5 = future_times
             temp1, temp2, temp3, temp4, temp5 = future_temp
             hum1, hum2, hum3, hum4, hum5 = future_humidity
-
-                #pass data to template
-
             context = {
-                'location':city,
-                'current_temp':current_weather['current_temp'],
-                'MinTemp':current_weather['temp_min'],
-                'Max_temp':current_weather['temp_max'],
-                'feels_like':current_weather['feels_like'],
-                'humidity':current_weather['humidity'],
-                'clouds':current_weather['clouds'],
+                'location': city,
+                'current_temp': current_weather['current_temp'],
+                'MinTemp': current_weather['temp_min'],
+                'MaxTemp': current_weather['temp_max'],
+                'feels_like': current_weather['feels_like'],
+                'humidity': current_weather['humidity'],
+                'clouds': current_weather['clouds'],
                 'description': current_weather['description'],
                 'city': current_weather['city'],
                 'country': current_weather['country'],
-
                 'time': datetime.now(),
                 'date': datetime.now().strftime("%B %d, %Y"),
-
                 'wind': current_weather['wind_gust_speed'],
                 'pressure': current_weather['pressure'],
-                'visibility': current_weather['visibility'],
-
+                'visibility': current_weather['Visibility'],
                 'time1': time1,
                 'time2': time2,
                 'time3': time3,
                 'time4': time4,
                 'time5': time5,
-
                 'temp1': f"{round(temp1, 1)}",
                 'temp2': f"{round(temp2, 1)}",
                 'temp3': f"{round(temp3, 1)}",
                 'temp4': f"{round(temp4, 1)}",
                 'temp5': f"{round(temp5, 1)}",
-
                 'hum1': f"{round(hum1, 1)}",
                 'hum2': f"{round(hum2, 1)}",
                 'hum3': f"{round(hum3, 1)}",
                 'hum4': f"{round(hum4, 1)}",
                 'hum5': f"{round(hum5, 1)}",
             }
-
-            return render(request, 'weather.html', context) 
- 
-        return render(request, 'weather.html')
+            return render(request, 'weather.html', context)
+        except Exception as e:
+            error_message = "An error occurred while processing your request. Please check your input and try again."
+            return render(request, 'weather.html', {'error_message': error_message})
+    return render(request, 'weather.html')
