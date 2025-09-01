@@ -26,8 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    if (temps.length === 0 || times.length === 0 ) {
+    // Only log error if forecast items exist but data is missing
+    if (forecastItems.length > 0 && (temps.length === 0 || times.length === 0)) {
         console.error('Temp or Time values are missing.');
+        return;
+    }
+    // If no forecast items, do nothing (initial load)
+    if (forecastItems.length === 0) {
         return;
     }
 

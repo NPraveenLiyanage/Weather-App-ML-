@@ -208,4 +208,9 @@ def weather_view(request):
         except Exception as e:
             error_message = "An error occurred while processing your request. Please check your input and try again."
             return render(request, 'weather.html', {'error_message': error_message})
-    return render(request, 'weather.html')
+    # Provide default values for forecast variables to avoid JS errors on initial GET
+    return render(request, 'weather.html', {
+        'time1': '', 'time2': '', 'time3': '', 'time4': '', 'time5': '',
+        'temp1': '', 'temp2': '', 'temp3': '', 'temp4': '', 'temp5': '',
+        'hum1': '', 'hum2': '', 'hum3': '', 'hum4': '', 'hum5': ''
+    })

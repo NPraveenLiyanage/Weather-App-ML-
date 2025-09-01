@@ -81,6 +81,7 @@
                 </p>
 
             <ul class="forecast">
+                {% if time1 and temp1 and hum1 %}
                 <li class="forecast_item">
                     <p class="forecast-time">{{ time1 }}</p>
                     <p class="forecast-temperature">
@@ -90,6 +91,8 @@
                         Humidity: <span class="forecast-humidityValue">{{ hum1 }}</span>
                     </p>
                 </li>
+                {% endif %}
+                {% if time2 and temp2 and hum2 %}
                 <li class="forecast_item">
                     <p class="forecast-time">{{ time2 }}</p>
                     <p class="forecast-temperature">
@@ -99,6 +102,8 @@
                         Humidity: <span class="forecast-humidityValue">{{ hum2 }}</span>
                     </p>
                 </li>
+                {% endif %}
+                {% if time3 and temp3 and hum3 %}
                 <li class="forecast_item">
                     <p class="forecast-time">{{ time3 }}</p>
                     <p class="forecast-temperature">
@@ -108,6 +113,8 @@
                         Humidity: <span class="forecast-humidityValue">{{ hum3 }}</span>
                     </p>
                 </li>
+                {% endif %}
+                {% if time4 and temp4 and hum4 %}
                 <li class="forecast_item">
                     <p class="forecast-time">{{ time4 }}</p>
                     <p class="forecast-temperature">
@@ -117,6 +124,8 @@
                         Humidity: <span class="forecast-humidityValue">{{ hum4 }}</span>
                     </p>
                 </li>
+                {% endif %}
+                {% if time5 and temp5 and hum5 %}
                 <li class="forecast_item">
                     <p class="forecast-time">{{ time5 }}</p>
                     <p class="forecast-temperature">
@@ -126,6 +135,7 @@
                         Humidity: <span class="forecast-humidityValue">{{ hum5 }}</span>
                     </p>
                 </li>
+                {% endif %}
             </ul>
             <canvas id="chart" height="45px"></canvas>
         </section>
