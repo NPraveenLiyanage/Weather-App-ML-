@@ -13,6 +13,7 @@ from sklearn.metrics import mean_squared_error #to measure the accuracy of our p
 from datetime import datetime, timedelta #to work with dates and times
 import pytz
 import os
+import logging
 
 API_Key = '270a56acbb0149f9b461c746fdd7073c'
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
@@ -129,7 +130,8 @@ def weather_view(request):
         if error_message:
             return render(request, 'weather.html', {'error_message': error_message})
         try:
-            csv_path = os.path.join('C:\\Users\\lnipu\\mern projects\\Weather-App(ML)\\weather.csv')
+            # Use a path relative to this file to find the project's weather.csv
+            csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'weather.csv'))
             data = read_historical_data(csv_path)
             X, y, le = prepare_data(data)
             rain_model = train_rain_model(X, y)
@@ -206,10 +208,27 @@ def weather_view(request):
             }
             return render(request, 'weather.html', context)
         except Exception as e:
-            error_message = "An error occurred while processing your request. Please check your input and try again."
+            logging.exception('Error processing weather request')
+            error_message = f"An error occurred while processing your request: {e}"
             return render(request, 'weather.html', {'error_message': error_message})
     # Provide default values for forecast variables to avoid JS errors on initial GET
+    # Provide defaults so the template renders useful placeholders on initial GET
     return render(request, 'weather.html', {
+        'description': 'No forecast yet',
+        'location': '',
+        'current_temp': '--',
+        'feels_like': '--',
+        'humidity': '--',
+        'clouds': '--',
+        'city': '',
+        'country': '',
+        'time': '',
+        'date': '',
+        'wind': '--',
+        'pressure': '--',
+        'visibility': '--',
+        'MinTemp': '--',
+        'MaxTemp': '--',
         'time1': '', 'time2': '', 'time3': '', 'time4': '', 'time5': '',
         'temp1': '', 'temp2': '', 'temp3': '', 'temp4': '', 'temp5': '',
         'hum1': '', 'hum2': '', 'hum3': '', 'hum4': '', 'hum5': ''

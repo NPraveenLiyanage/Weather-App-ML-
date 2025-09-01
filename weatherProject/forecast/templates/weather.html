@@ -26,13 +26,18 @@
                         placeholder="ex. Colombo"
                         value="{{ location }}"
                     />
-                    <button class="search-button">
+                    <button type="submit" class="search-button">
                         <div style="width: 22px; height: 22px; color: white;">
                             <i class="bi bi-search"></i>
                         </div>
                     </button>
                 </div>
             </form>
+            {% if error_message %}
+            <div class="alert alert-danger" role="alert" style="margin-top:12px;">
+                {{ error_message }}
+            </div>
+            {% endif %}
             <div class="day-stats">
                 <h2 class="day-stats__temperature">
                     <span class="day-stats__temperature_value">{{ current_temp }}</span>°
@@ -75,7 +80,7 @@
                     Wind
                     <span class="weatherWindKph">{{ wind }}</span> kilometers per hours. pressure 
                     is <span class="weatherPressure">{{ pressure }}</span> mb. Visibility is 
-                    <span class="weatherSnow">{{ visibiltity }}</span>. Maximum temperature is 
+                    <span class="weatherSnow">{{ visibility }}</span>. Maximum temperature is 
                     <span class="weatherMaxTemp">{{ MaxTemp }}</span>°. Minimum temperature is 
                     <span class="weatherMinTemp">{{ MinTemp}}</span>°.
                 </p>

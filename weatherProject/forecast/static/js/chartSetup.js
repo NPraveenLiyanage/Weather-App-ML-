@@ -16,23 +16,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const times = [];
 
     forecastItems.forEach(item => {
-        const time = item.querySelector('.forecast-time').textContent;
-        const temp = item.querySelector('.forecast-temperatureValue').textContent;
-        const hum = item.querySelector('.forecast-humidityValue').textContent;
-
+        const timeEl = item.querySelector('.forecast-time');
+        const tempEl = item.querySelector('.forecast-temperatureValue');
+        const humEl = item.querySelector('.forecast-humidityValue');
+        if (!timeEl || !tempEl || !humEl) {
+            return;
+        }
+        const time = timeEl.textContent.trim();
+        const temp = tempEl.textContent.trim();
+        const hum = humEl.textContent.trim();
         if (time && temp && hum) {
             times.push(time);
             temps.push(temp);
         }
     });
+    console.debug('chartSetup: forecastItems count =', forecastItems.length);
+    console.debug('chartSetup: times =', times);
+    console.debug('chartSetup: temps =', temps);
 
-    // Only log error if forecast items exist but data is missing
-    if (forecastItems.length > 0 && (temps.length === 0 || times.length === 0)) {
-        console.error('Temp or Time values are missing.');
-        return;
+    // Only run chart if at least one forecast item and all have valid data
+    if (forecastItems.length === 0 || temps.length === 0 || times.length === 0) {
+    return;
     }
-    // If no forecast items, do nothing (initial load)
-    if (forecastItems.length === 0) {
+    if (temps.length !== forecastItems.length || times.length !== forecastItems.length) {
+        // Do not log error, just skip chart rendering if any item is missing data
         return;
     }
 
@@ -77,4 +84,3 @@ document.addEventListener('DOMContentLoaded', () => {
         },
     });
 });
-const forecastItems = document.querySelectorAll('.forecast_item');
