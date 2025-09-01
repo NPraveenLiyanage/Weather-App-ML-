@@ -15,7 +15,7 @@ import pytz
 import os
 import logging
 
-API_Key = '270a56acbb0149f9b461c746fdd7073c'
+API_Key = os.environ.get('OPENWEATHER_API_KEY', '270a56acbb0149f9b461c746fdd7073c')
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 
 
