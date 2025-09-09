@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+# Load environment variables from a local .env file when present (helps local development)
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Read SECRET_KEY from env for production; fallback to the existing dev key
+# Read SECRET_KEY from env for production; fallback to the existing dev key in development
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-4w!z%pv5il09=54k&p*555^b_f3oq!zzz(sa&#ex417(0%u63k')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -30,6 +33,10 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # ALLOWED_HOSTS can be provided as a comma-separated env var
 allowed = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h for h in allowed.split(',') if h] if allowed else []
+
+# In production (DEBUG=False) it's safer to require a secret key be provided via env
+if not DEBUG and (not os.environ.get('DJANGO_SECRET_KEY')):
+    raise RuntimeError('DJANGO_SECRET_KEY environment variable is required in production')
 
 
 # Application definition

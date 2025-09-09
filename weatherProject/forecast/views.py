@@ -15,7 +15,17 @@ import pytz
 import os
 import logging
 
-API_Key = os.environ.get('OPENWEATHER_API_KEY', '270a56acbb0149f9b461c746fdd7073c')
+API_Key = os.environ.get('OPENWEATHER_API_KEY')
+# In development, allow a fallback if DEBUG is enabled to ease local testing
+if not API_Key:
+    try:
+        from weatherProject import settings as _settings
+        if getattr(_settings, 'DEBUG', True):
+            # allow a developer to set OPENWEATHER_API_KEY in their local env or .env file
+            API_Key = os.environ.get('OPENWEATHER_API_KEY')
+    except Exception:
+        # If settings can't be imported, leave API_Key as None
+        pass
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 
 
@@ -233,3 +243,9 @@ def weather_view(request):
         'temp1': '', 'temp2': '', 'temp3': '', 'temp4': '', 'temp5': '',
         'hum1': '', 'hum2': '', 'hum3': '', 'hum4': '', 'hum5': ''
     })
+
+
+def healthz(request):
+    # Simple health endpoint for load balancers and platform probes
+    from django.http import JsonResponse
+    return JsonResponse({'status': 'ok'})
