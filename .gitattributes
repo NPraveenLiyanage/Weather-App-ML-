@@ -1,0 +1,15 @@
+# Enforce LF line endings for files that must remain LF (shell scripts, python, yaml, etc.)
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+Dockerfile text eol=lf
+*.json text eol=lf
+
+# Keep binary files unchanged
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
