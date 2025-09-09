@@ -38,6 +38,10 @@ ALLOWED_HOSTS = [h for h in allowed.split(',') if h] if allowed else []
 if not DEBUG and (not os.environ.get('DJANGO_SECRET_KEY')):
     raise RuntimeError('DJANGO_SECRET_KEY environment variable is required in production')
 
+# In production require OPENWEATHER_API_KEY as well
+if not DEBUG and (not os.environ.get('OPENWEATHER_API_KEY')):
+    raise RuntimeError('OPENWEATHER_API_KEY environment variable is required in production')
+
 
 # Application definition
 
