@@ -1,4 +1,4 @@
-#!/bin/sh
+﻿#!/bin/sh
 set -e
 
 # Collect static files at container start (safe); migrations should be run separately
@@ -11,3 +11,4 @@ if [ -z "$1" ]; then
 else
 	exec "$@"
 fi
+
