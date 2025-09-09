@@ -1,4 +1,4 @@
-# Dockerfile
+# Root Dockerfile for Vercel build context
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -6,11 +6,15 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Install dependencies
+COPY weatherProject/requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Copy the whole repository into the container
 COPY . .
-COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Copy the project entrypoint and make it executable
+COPY weatherProject/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Entrypoint will run migrations, collectstatic and then start the server
