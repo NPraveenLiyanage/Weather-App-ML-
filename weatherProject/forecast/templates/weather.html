@@ -19,37 +19,30 @@
             <p class="loading-overlay__text">Fetching weather near you…</p>
         </div>
     </div>
-    <main class="weather-shell {{ description_class|default:'no-forecast' }} {% if forecast %}ready{% else %}loading-state{% endif %}" data-fallback-city="{{ fallback_city }}" data-base-classes="weather-shell" data-has-initial="{% if forecast %}true{% else %}false{% endif %}">
+    <main class="weather-shell {{ description_class|default:'no-forecast' }} {% if forecast %}ready{% else %}loading-state{% endif %}"
+        data-fallback-city="{{ fallback_city }}"
+        data-base-classes="weather-shell"
+        data-has-initial="{% if forecast %}true{% else %}false{% endif %}"
+        data-server-error="{{ error_message|default_if_none:''|escape }}">
         <div id="status-banner" class="status-banner visually-hidden" role="status"></div>
-        <section class="side-container">
-            <form method="POST" data-auto-url="{% url 'auto_location' %}">
-                {% csrf_token %}
-                <div class="search-container">
-                    <div style="width: 22px; height: 22px; color: white;" class="weather-icon">
-                        <i class="bi bi-cloud-fog"></i>
-                    </div>
-                    <input
-                        type="text"
-                        name="city"
-                        class="geo-input"
-                        placeholder="ex. Colombo"
-                        value="{{ location }}"
-                    />
-                    <button type="submit" class="search-button">
-                        <div style="width: 22px; height: 22px; color: white;">
-                            <i class="bi bi-search"></i>
-                        </div>
-                    </button>
+        <aside id="personalization-drawer" class="personalization-drawer" aria-hidden="true">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <i class="bi bi-gear"></i>
+                    <span>Personal controls</span>
                 </div>
-            </form>
-            <div class="favorites-panel">
+                <button type="button" class="drawer-close" aria-label="Close settings">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="drawer-panel favorites-panel">
                 <div class="panel-title">Saved locations</div>
                 <ul class="favorites-list" data-empty-text="No favorites yet"></ul>
                 <div class="favorites-actions">
                     <button type="button" class="btn btn-light btn-save-favorite">Save current city</button>
                 </div>
             </div>
-            <div class="alerts-panel">
+            <div class="drawer-panel alerts-panel">
                 <div class="panel-title">Personal alerts</div>
                 <label class="alert-setting">
                     <input type="checkbox" class="form-check-input input-rain-alert" />
@@ -60,11 +53,46 @@
                     <input type="number" class="form-control input-temp-threshold" min="10" max="55" placeholder="35" />
                 </label>
             </div>
-            {% if error_message %}
-            <div class="alert alert-danger" role="alert" style="margin-top:12px;">
-                {{ error_message }}
+        </aside>
+        <section class="side-container">
+            <div class="side-header">
+                <form method="POST" data-auto-url="{% url 'auto_location' %}">
+                    {% csrf_token %}
+                    <div class="search-container">
+                        <div style="width: 22px; height: 22px; color: white;" class="weather-icon">
+                            <i class="bi bi-cloud-fog"></i>
+                        </div>
+                        <input
+                            type="text"
+                            name="city"
+                            class="geo-input"
+                            placeholder="ex. Colombo"
+                            value="{{ location }}"
+                        />
+                        <button type="submit" class="search-button">
+                            <div style="width: 22px; height: 22px; color: white;">
+                                <i class="bi bi-search"></i>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+                <div class="utility-actions" role="region" aria-label="Quick weather actions">
+                    <button type="button" class="bookmark-trigger" title="Save current city" aria-label="Save current city">
+                        <i class="bi bi-bookmark-plus"></i>
+                    </button>
+                    <button
+                        type="button"
+                        class="settings-toggle"
+                        title="Open personal settings"
+                        aria-expanded="false"
+                        aria-controls="personalization-drawer"
+                        aria-label="Open personal settings"
+                    >
+                        <i class="bi bi-gear"></i>
+                        <span class="settings-label">Settings</span>
+                    </button>
+                </div>
             </div>
-            {% endif %}
             <div class="day-stats">
                 <h2 class="day-stats__temperature">
                     <span class="day-stats__temperature_value">{{ current_temp }}</span>°
@@ -116,27 +144,31 @@
                     <span class="weatherMinTemp">{{ MinTemp}}</span>°.
                 </p>
                 <p class="rain-outlook">Rain outlook: <span class="rain-outlook-value">{{ rain_outlook }}</span></p>
-                <p class="updated-at-text">Updated <span class="updated-at">{{ updated_at }}</span></p>
 
-            <ul class="forecast">
-                {% if forecast %}
-                    {% for item in forecast %}
-                    <li class="forecast_item">
-                        <p class="forecast-time">{{ item.time }}</p>
-                        <p class="forecast-temperature">
-                            &nbsp;<span class="forecast-temperatureValue">{{ item.temp }}</span>°
-                        </p>
-                        <p class="forecastWindText">
-                            Humidity: <span class="forecast-humidityValue">{{ item.humidity }}</span>
-                        </p>
-                        <p class="forecastDescription">{{ item.description }}</p>
-                    </li>
-                    {% endfor %}
-                {% else %}
-                    <li class="forecast_placeholder text-white-50">Forecast data will appear here.</li>
-                {% endif %}
-            </ul>
-            <canvas id="chart" height="45px"></canvas>
+            <div class="forecast-stack">
+                <ul class="forecast">
+                    {% if forecast %}
+                        {% for item in forecast %}
+                        <li class="forecast_item">
+                            <p class="forecast-time">{{ item.time }}</p>
+                            <p class="forecast-temperature">
+                                &nbsp;<span class="forecast-temperatureValue">{{ item.temp }}</span>°
+                            </p>
+                            <div class="forecast-divider" aria-hidden="true"></div>
+                            <p class="forecastWindText">
+                                Humidity: <span class="forecast-humidityValue">{{ item.humidity }}</span>
+                            </p>
+                            <p class="forecastDescription">{{ item.description }}</p>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="forecast_placeholder text-white-50">Forecast data will appear here.</li>
+                    {% endif %}
+                </ul>
+                <div class="forecast-chart" aria-hidden="true">
+                    <canvas id="chart" height="90"></canvas>
+                </div>
+            </div>
         </section>
     </main>
 

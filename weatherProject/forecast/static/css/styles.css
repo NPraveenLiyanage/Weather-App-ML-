@@ -16,6 +16,7 @@ body {
     justify-content: center;
     height: 100vh;
     width: 100Vw;
+    overflow-x: hidden;
 }
 
 .loading-overlay {
@@ -47,32 +48,52 @@ body {
 }
 
 .status-banner {
-    width: 100%;
-    text-align: center;
-    padding: 10px 14px;
-    font-size: 14px;
+    position: absolute;
+    top: 90px;
+    right: 26px;
+    min-width: 220px;
+    max-width: 320px;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 13px;
     color: #ffffff;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 14px 26px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 9;
 }
 
 .status-banner.info {
-    background: rgba(13, 110, 253, 0.65);
+    background: rgba(13, 110, 253, 0.9);
 }
 
 .status-banner.error {
-    background: rgba(220, 53, 69, 0.75);
+    background: rgba(220, 53, 69, 0.9);
 }
 
 .status-banner.success {
-    background: rgba(25, 135, 84, 0.65);
+    background: rgba(25, 135, 84, 0.9);
 }
 
 .status-banner.visually-hidden {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+}
+
+.status-banner:not(.visually-hidden) {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 
 main {
-    position: absolute;
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -84,7 +105,7 @@ main {
     background-size: cover;
 
     border-radius: 25px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .weather-shell.loading-state {
@@ -174,6 +195,18 @@ main.clear {
     border-right: 1px solid rgba(255, 255, 255, 0.4);
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(22.5px);
+    position: relative;
+}
+
+.side-header {
+    width: 100%;
+    display: block;
+    margin-bottom: 55px;
+    padding-top: 72px;
+}
+
+.side-header form {
+    width: 100%;
 }
 
 .search-container {
@@ -279,7 +312,7 @@ main.clear {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 0 75px;
+    padding: 0 75px 110px;
 
     background-image: url(../img/main-blur.png);
 }
@@ -393,11 +426,124 @@ main.clear {
     font-size: 13px;
 }
 
-.rain-outlook,
-.updated-at-text {
+.rain-outlook {
     color: #ffffff;
     font-size: 13px;
     margin-bottom: 8px;
+}
+
+.utility-actions {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 6;
+}
+
+.utility-actions button {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease, border 0.2s ease;
+}
+
+.utility-actions button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.bookmark-trigger {
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    padding: 0;
+    font-size: 18px;
+}
+
+.settings-toggle {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.settings-toggle .settings-label {
+    font-size: 13px;
+}
+
+.personalization-drawer {
+    position: absolute;
+    top: 84px;
+    right: 32px;
+    width: 320px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(6, 6, 6, 0.85);
+    backdrop-filter: blur(16px);
+    padding: 18px;
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 7;
+}
+
+.personalization-drawer.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.drawer-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.drawer-close {
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.drawer-panel {
+    margin-bottom: 12px;
+}
+
+.drawer-panel:last-of-type {
+    margin-bottom: 0;
+}
+
+.personalization-drawer .favorites-panel,
+.personalization-drawer .alerts-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.forecast-stack {
+    position: relative;
+    width: 100%;
+    padding-bottom: 110px;
 }
 
 .forecast {
@@ -405,7 +551,10 @@ main.clear {
     justify-content: space-between;
     width: 100%;
     list-style: none;
-    gap: 20px; /* Adjust this value as needed for desired spacing */
+    gap: 24px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
 }
 
 .forecast-item {
@@ -446,6 +595,11 @@ main.clear {
     text-align: center;
 }
 
+.forecast-divider {
+    width: 100%;
+    height: 40px;
+}
+
 @media (max-width: 900px) {
     body {
         height: auto;
@@ -460,18 +614,54 @@ main.clear {
         width: 100%;
         max-width: 540px;
         height: auto;
+        gap: 16px;
     }
 
     .side-container {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-        padding: 28px 24px;
+        padding: 18px 16px 20px;
         align-items: stretch;
+        max-height: none;
+        min-height: 0;
+        overflow: visible;
+        gap: 18px;
+    }
+
+    .side-header {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 32px;
+        padding-top: 0;
+    }
+
+    .side-header form {
+        width: 100%;
     }
 
     .search-container {
-        margin-bottom: 28px;
+        margin-bottom: 0;
+    }
+
+    .utility-actions {
+        position: static;
+        width: auto;
+        justify-content: flex-end;
+        gap: 10px;
+        margin: 0;
+        align-self: flex-end;
+    }
+
+    .utility-actions .settings-toggle {
+        flex: 0 0 auto;
+        justify-content: center;
+    }
+
+    .search-container {
+        flex-direction: row;
+        margin-bottom: 0;
     }
 
     .favorites-panel,
@@ -485,29 +675,66 @@ main.clear {
         min-height: auto;
     }
 
+    .status-banner {
+        right: 18px;
+        left: auto;
+        top: 118px;
+        max-width: calc(100% - 36px);
+    }
+
     .weather__primary-title {
-        font-size: 32px;
+        font-size: 28px;
     }
 
     .weather__primary-stats,
     .sun-times,
-    .rain-outlook,
-    .updated-at-text {
+    .rain-outlook {
         width: 100%;
     }
 
+    .weather__primary-stats {
+        font-size: 12px;
+    }
+
+    .personalization-drawer {
+        top: 70px;
+        right: 18px;
+        width: auto;
+        max-width: calc(100% - 40px);
+    }
+
+    .forecast-stack {
+        padding-bottom: 0;
+    }
+
     .forecast {
-        flex-direction: column;
-        gap: 16px;
+        flex-direction: row;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scroll-snap-type: x mandatory;
     }
 
     .forecast_item {
         text-align: center;
+        min-width: 150px;
+        scroll-snap-align: center;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 12px;
     }
 
-    #chart {
+    .forecast-divider {
+        height: 24px;
+    }
+
+    .forecast-chart {
+        position: static;
         width: 100%;
-        height: 220px;
+        height: 110px;
+        margin-top: 10px;
+        padding: 0;
     }
 
     .loading-overlay__card {
@@ -517,20 +744,44 @@ main.clear {
 }
 
 @media (max-width: 480px) {
+    .side-header {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+        padding-top: 0;
+    }
+
+    .side-header form {
+        flex: 1 1 auto;
+        width: auto;
+    }
+
+    .search-container {
+        margin-bottom: 0;
+    }
+
+    .search-container {
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+    }
+
     .side-container {
-        padding: 24px 18px;
+        padding: 20px 16px;
+        max-height: 300px;
+        min-height: 240px;
     }
 
     .main-container {
-        padding: 28px 18px 36px;
+        padding: 26px 16px 32px;
     }
 
     .weather__primary-title {
-        font-size: 26px;
+        font-size: 24px;
     }
 
     .day-stats__temperature {
-        font-size: 42px;
+        font-size: 38px;
     }
 
     .day-stats__feelslike {
@@ -538,7 +789,7 @@ main.clear {
     }
 
     .forecast-temperature {
-        font-size: 32px;
+        font-size: 26px;
     }
 
     .favorites-panel,
@@ -553,13 +804,66 @@ main.clear {
     .alert-setting,
     .sun-times,
     .weather__primary-stats,
-    .rain-outlook,
-    .updated-at-text {
+    .rain-outlook {
         font-size: 12px;
+    }
+
+    .utility-actions {
+        margin-left: auto;
+        gap: 8px;
+    }
+
+    .utility-actions button {
+        padding: 6px 8px;
+        min-height: 34px;
+        font-size: 12px;
+    }
+
+    .utility-actions .settings-label {
+        display: none;
+    }
+
+    .bookmark-trigger {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+    }
+
+    .personalization-drawer {
+        top: 60px;
+        right: 16px;
+        left: 16px;
+        width: auto;
+    }
+
+    .status-banner {
+        top: 110px;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+    }
+
+    .forecast-stack {
+        padding-bottom: 0;
+    }
+
+    .forecast-chart {
+        display: none;
     }
 }
 
+
+.forecast-chart {
+    position: absolute;
+    top: 88px;
+    left: 65px;
+    right: 65px;
+    height: 56px;
+    pointer-events: none;
+    z-index: 0;
+}
+
 #chart {
-    margin: 30px auto 30px;
     width: 100%;
+    height: 100%;
 }

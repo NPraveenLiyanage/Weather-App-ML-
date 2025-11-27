@@ -25,13 +25,19 @@
                 return;
             }
             const time = timeEl.textContent.trim();
-            const temp = tempEl.textContent.trim();
+            const temp = parseFloat(tempEl.textContent.trim());
             const hum = humEl.textContent.trim();
-            if (time && temp && hum) {
+            if (time && !Number.isNaN(temp) && hum) {
                 times.push(time);
                 temps.push(temp);
             }
         });
+
+        const MAX_POINTS = 5;
+        if (times.length > MAX_POINTS) {
+            times.splice(MAX_POINTS);
+            temps.splice(MAX_POINTS);
+        }
 
         if (!temps.length || temps.length !== times.length) {
             if (window.forecastChartInstance) {
@@ -46,9 +52,8 @@
         }
 
         const ctx = chartElement.getContext('2d');
-        const gradient = ctx.createLinearGradient(0, -10, 0, 100);
-        gradient.addColorStop(0, 'rgba(250, 0, 0, 1)');
-        gradient.addColorStop(1, 'rgba(136, 255, 0, 1)');
+        const accentColor = '#ffb347';
+        const glowColor = 'rgba(255, 179, 71, 0.6)';
 
         window.forecastChartInstance = new Chart(ctx, {
             type: 'line',
@@ -58,10 +63,13 @@
                     {
                         label: 'Celsius Degrees',
                         data: temps,
-                        borderColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.4,
-                        pointRadius: 2,
+                        borderColor: accentColor,
+                        borderWidth: 3,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHitRadius: 10,
+                        fill: false,
                     },
                 ],
             },
@@ -69,6 +77,22 @@
                 plugins: {
                     legend: {
                         display: false,
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.parsed.y}°C`,
+                        },
+                    },
+                },
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        borderJoinStyle: 'round',
+                        borderCapStyle: 'round',
+                        shadowColor: glowColor,
+                        shadowBlur: 12,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
                     },
                 },
                 scales: {
@@ -86,7 +110,7 @@
                     },
                 },
                 animation: {
-                    duration: 750,
+                    duration: 600,
                 },
             },
         });

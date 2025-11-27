@@ -268,6 +268,7 @@ def weather_view(request):
         'forecast': [],
         'updated_at': '',
         'fallback_city': DEFAULT_CITY,
+        'error_message': '',
     }
 
     if request.method == 'POST':

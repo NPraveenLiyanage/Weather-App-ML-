@@ -11,10 +11,49 @@
     <title>Weather Forecast</title>
 </head>
 <body>
-    <main class="No forecast yet">
+    <div id="loading-overlay" class="loading-overlay active" aria-live="polite">
+        <div class="loading-overlay__card">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="loading-overlay__text">Fetching weather near you…</p>
+        </div>
+    </div>
+    <main class="weather-shell no-forecast loading-state" data-fallback-city="Colombo" data-base-classes="weather-shell" data-has-initial="false">
+        <div id="status-banner" class="status-banner visually-hidden" role="status"></div>
+        <aside id="personalization-drawer" class="personalization-drawer" aria-hidden="true">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <i class="bi bi-gear"></i>
+                    <span>Personal controls</span>
+                </div>
+                <button type="button" class="drawer-close" aria-label="Close settings">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="drawer-panel favorites-panel">
+                <div class="panel-title">Saved locations</div>
+                <ul class="favorites-list" data-empty-text="No favorites yet"></ul>
+                <div class="favorites-actions">
+                    <button type="button" class="btn btn-light btn-save-favorite">Save current city</button>
+                </div>
+            </div>
+            <div class="drawer-panel alerts-panel">
+                <div class="panel-title">Personal alerts</div>
+                <label class="alert-setting">
+                    <input type="checkbox" class="form-check-input input-rain-alert" />
+                    Notify me when rain is likely
+                </label>
+                <label class="alert-setting">
+                    High temperature alert (°C)
+                    <input type="number" class="form-control input-temp-threshold" min="10" max="55" placeholder="35" />
+                </label>
+            </div>
+        </aside>
+        <div class="drawer-backdrop" aria-hidden="true"></div>
         <section class="side-container">
-            <form method="POST">
-                <input type="hidden" name="csrfmiddlewaretoken" value="GUfGPFeg2Bq29NrrPkuUBIkP9IRl2GY5KT6Zuo5pg2RorcZszx0maXHhxneeP908">
+            <form method="POST" data-auto-url="/auto-location/">
+                <input type="hidden" name="csrfmiddlewaretoken" value="0mq2VZLHtAs5Oz3gjrQQ3c18ID7XReHt47pDPI5716uabxPOyf8shrIQZp0W9eh1">
                 <div class="search-container">
                     <div style="width: 22px; height: 22px; color: white;" class="weather-icon">
                         <i class="bi bi-cloud-fog"></i>
@@ -60,6 +99,21 @@
         </section>
 
         <section class="main-container">
+            <div class="utility-actions" role="region" aria-label="Quick weather actions">
+                <button type="button" class="bookmark-trigger" title="Save current city" aria-label="Save current city">
+                    <i class="bi bi-bookmark-plus"></i>
+                </button>
+                <button
+                    type="button"
+                    class="settings-toggle"
+                    title="Open personal settings"
+                    aria-expanded="false"
+                    aria-controls="personalization-drawer"
+                >
+                    <i class="bi bi-gear"></i>
+                    <span class="settings-label">Settings</span>
+                </button>
+            </div>
             <h4 class="secondary-title">Weather Forecast</h4>
             <h1 class="weather__primary-title">No forecast yet</h1>
             <div class="weather__location">
@@ -72,6 +126,10 @@
                     <span class="weather__location-date"></span>
                 </p>
                 </div>
+                <div class="sun-times">
+                    <p>Sunrise: <span class="sunrise-value">--</span></p>
+                    <p>Sunset: <span class="sunset-value">--</span></p>
+                </div>
                 <p class="weather__primary-stats">
                     Wind
                     <span class="weatherWindKph">--</span> kilometers per hours. pressure 
@@ -80,20 +138,20 @@
                     <span class="weatherMaxTemp">--</span>°. Minimum temperature is 
                     <span class="weatherMinTemp">--</span>°.
                 </p>
+                <p class="rain-outlook">Rain outlook: <span class="rain-outlook-value">Rain outlook unavailable</span></p>
 
             <ul class="forecast">
                 
-                
-                
-                
+                    <li class="forecast_placeholder text-white-50">Forecast data will appear here.</li>
                 
             </ul>
-            <canvas id="chart" height="45px"></canvas>
+            <canvas id="chart" height="200"></canvas>
         </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/js/chartSetup.js"></script>
+    <script src="/static/js/autoLocation.js"></script>
 
 </body>
 </html>

@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveFavoriteBtn = document.querySelector('.btn-save-favorite');
     const rainAlertToggle = document.querySelector('.input-rain-alert');
     const tempThresholdInput = document.querySelector('.input-temp-threshold');
+    const settingsToggle = document.querySelector('.settings-toggle');
+    const personalizationDrawer = document.getElementById('personalization-drawer');
+    const drawerCloseBtn = document.querySelector('.drawer-close');
+    const bookmarkTrigger = document.querySelector('.bookmark-trigger');
 
     if (!form || !main || !csrfInput) {
         return;
@@ -22,14 +26,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const FAVORITES_KEY = 'weather:favorites';
     const ALERTS_KEY = 'weather:alerts';
     let latestContext = null;
+    let toastTimer = null;
 
-    const showStatus = (message, variant = 'info') => {
+    const showStatus = (message, variant = 'info', options = {}) => {
         if (!statusBanner) {
             return;
         }
         statusBanner.textContent = message;
         statusBanner.classList.remove('visually-hidden', 'info', 'error', 'success');
         statusBanner.classList.add(variant);
+        if (toastTimer) {
+            window.clearTimeout(toastTimer);
+            toastTimer = null;
+        }
+        if (!options.persistent) {
+            const duration = options.duration ?? (variant === 'error' ? 6000 : 4000);
+            toastTimer = window.setTimeout(() => {
+                if (statusBanner.textContent === message) {
+                    clearStatus();
+                }
+            }, duration);
+        }
     };
 
     const clearStatus = () => {
@@ -39,6 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBanner.textContent = '';
         statusBanner.classList.add('visually-hidden');
         statusBanner.classList.remove('info', 'error', 'success');
+        if (toastTimer) {
+            window.clearTimeout(toastTimer);
+            toastTimer = null;
+        }
     };
 
     const markLoading = () => {
@@ -290,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('.sunrise-value', data.sunrise);
         setText('.sunset-value', data.sunset);
         setText('.rain-outlook-value', data.rain_outlook);
-        setText('.updated-at', formatDateTime(data.updated_at));
 
         const mainElement = main;
         if (mainElement && baseClasses) {
@@ -346,72 +366,91 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     };
 
-    if (hasInitialData) {
-        markLoaded();
-        return;
-    }
+    const hydrateContextFromDom = () => {
+        const city = document.querySelector('.weather__location-city')?.textContent?.trim();
+        if (!city) {
+            return;
+        }
+        const country = document.querySelector('.weather__location-country')?.textContent?.trim() || '';
+        latestContext = {
+            city,
+            country,
+        };
+    };
 
-    const cachedContext = loadCachedContext();
-    if (cachedContext) {
-        applyWeatherContext(cachedContext, { fromCache: true });
-        const when = cachedContext.cachedAt ? formatDateTime(cachedContext.cachedAt) : 'earlier';
-        showStatus(`Showing saved forecast from ${when} while we fetch fresh data.`, 'info');
+    hydrateContextFromDom();
+
+    const serverErrorMessage = main.dataset.serverError?.trim();
+    if (serverErrorMessage) {
+        showStatus(serverErrorMessage, 'error');
     }
 
     let geolocationResolved = false;
     let fallbackRequested = false;
-
-    const triggerFallback = (force = false) => {
-        if (fallbackRequested && !force) {
-            return;
-        }
-        fallbackRequested = true;
-        fetchWeather({ fallback_city: fallbackCity }).finally(() => {
-            fallbackRequested = false;
-        });
-    };
-
     let fallbackTimer = null;
-    const startFallbackTimer = () => {
-        fallbackTimer = setTimeout(() => {
-            if (!geolocationResolved) {
-                triggerFallback();
-            }
-        }, 6000);
-    };
+    let triggerFallback = () => {};
 
-    if ('geolocation' in navigator) {
-        startFallbackTimer();
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                geolocationResolved = true;
-                if (fallbackTimer) {
-                    clearTimeout(fallbackTimer);
-                }
-                fetchWeather({
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude,
-                });
-            },
-            (error) => {
-                console.debug('Geolocation not available', error);
-                if (fallbackTimer) {
-                    clearTimeout(fallbackTimer);
-                }
-                triggerFallback();
-            },
-            {
-                enableHighAccuracy: false,
-                timeout: 8000,
-                maximumAge: 300000,
-            },
-        );
+    if (hasInitialData) {
+        markLoaded();
     } else {
-        triggerFallback();
+        const cachedContext = loadCachedContext();
+        if (cachedContext) {
+            applyWeatherContext(cachedContext, { fromCache: true });
+            const when = cachedContext.cachedAt ? formatDateTime(cachedContext.cachedAt) : 'earlier';
+            showStatus(`Showing saved forecast from ${when} while we fetch fresh data.`, 'info');
+        }
+
+        triggerFallback = (force = false) => {
+            if (fallbackRequested && !force) {
+                return;
+            }
+            fallbackRequested = true;
+            fetchWeather({ fallback_city: fallbackCity }).finally(() => {
+                fallbackRequested = false;
+            });
+        };
+
+        const startFallbackTimer = () => {
+            fallbackTimer = setTimeout(() => {
+                if (!geolocationResolved) {
+                    triggerFallback();
+                }
+            }, 6000);
+        };
+
+        if ('geolocation' in navigator) {
+            startFallbackTimer();
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    geolocationResolved = true;
+                    if (fallbackTimer) {
+                        clearTimeout(fallbackTimer);
+                    }
+                    fetchWeather({
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                    });
+                },
+                (error) => {
+                    console.debug('Geolocation not available', error);
+                    if (fallbackTimer) {
+                        clearTimeout(fallbackTimer);
+                    }
+                    triggerFallback();
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 8000,
+                    maximumAge: 300000,
+                },
+            );
+        } else {
+            triggerFallback();
+        }
     }
 
     window.addEventListener('offline', () => {
-        showStatus('You appear to be offline. Showing saved forecast.', 'error');
+        showStatus('You appear to be offline. Showing saved forecast.', 'error', { persistent: true });
     });
 
     window.addEventListener('online', () => {
@@ -424,23 +463,29 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFavorites();
     syncAlertInputs();
 
+    const handleSaveFavorite = () => {
+        if (!latestContext || !latestContext.city) {
+            showStatus('No city data to save yet.', 'error');
+            return;
+        }
+        const favorites = loadFavorites();
+        const exists = favorites.some((fav) => fav.city.toLowerCase() === latestContext.city.toLowerCase());
+        if (exists) {
+            showStatus('City already in favorites.', 'info');
+            return;
+        }
+        const nextFavorites = [{ city: latestContext.city, country: latestContext.country }, ...favorites].slice(0, 10);
+        saveFavorites(nextFavorites);
+        renderFavorites();
+        showStatus(`${latestContext.city} saved to favorites.`, 'success');
+    };
+
     if (saveFavoriteBtn) {
-        saveFavoriteBtn.addEventListener('click', () => {
-            if (!latestContext || !latestContext.city) {
-                showStatus('No city data to save yet.', 'error');
-                return;
-            }
-            const favorites = loadFavorites();
-            const exists = favorites.some((fav) => fav.city.toLowerCase() === latestContext.city.toLowerCase());
-            if (exists) {
-                showStatus('City already in favorites.', 'info');
-                return;
-            }
-            const nextFavorites = [{ city: latestContext.city, country: latestContext.country }, ...favorites].slice(0, 10);
-            saveFavorites(nextFavorites);
-            renderFavorites();
-            showStatus(`${latestContext.city} saved to favorites.`, 'success');
-        });
+        saveFavoriteBtn.addEventListener('click', handleSaveFavorite);
+    }
+
+    if (bookmarkTrigger) {
+        bookmarkTrigger.addEventListener('click', handleSaveFavorite);
     }
 
     if (favoritesListEl) {
@@ -481,6 +526,42 @@ document.addEventListener('DOMContentLoaded', () => {
             saveAlerts(settings);
             if (value) {
                 showStatus(`High temperature alert set to ${value}°C.`, 'success');
+            }
+        });
+    }
+
+    const updateDrawerState = (open) => {
+        if (!personalizationDrawer || !settingsToggle) {
+            return;
+        }
+        personalizationDrawer.classList.toggle('open', open);
+        personalizationDrawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+        settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    const isDrawerOpen = () => personalizationDrawer?.classList.contains('open');
+
+    if (settingsToggle && personalizationDrawer) {
+        settingsToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            updateDrawerState(!isDrawerOpen());
+        });
+
+        drawerCloseBtn?.addEventListener('click', () => updateDrawerState(false));
+
+        document.addEventListener('click', (event) => {
+            if (!isDrawerOpen()) {
+                return;
+            }
+            if (personalizationDrawer.contains(event.target) || settingsToggle.contains(event.target)) {
+                return;
+            }
+            updateDrawerState(false);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && isDrawerOpen()) {
+                updateDrawerState(false);
             }
         });
     }
