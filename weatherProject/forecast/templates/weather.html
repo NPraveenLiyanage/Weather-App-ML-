@@ -20,6 +20,7 @@
         </div>
     </div>
     <main class="weather-shell {{ description_class|default:'no-forecast' }} {% if forecast %}ready{% else %}loading-state{% endif %}" data-fallback-city="{{ fallback_city }}" data-base-classes="weather-shell" data-has-initial="{% if forecast %}true{% else %}false{% endif %}">
+        <div id="status-banner" class="status-banner visually-hidden" role="status"></div>
         <section class="side-container">
             <form method="POST" data-auto-url="{% url 'auto_location' %}">
                 {% csrf_token %}
@@ -41,6 +42,24 @@
                     </button>
                 </div>
             </form>
+            <div class="favorites-panel">
+                <div class="panel-title">Saved locations</div>
+                <ul class="favorites-list" data-empty-text="No favorites yet"></ul>
+                <div class="favorites-actions">
+                    <button type="button" class="btn btn-light btn-save-favorite">Save current city</button>
+                </div>
+            </div>
+            <div class="alerts-panel">
+                <div class="panel-title">Personal alerts</div>
+                <label class="alert-setting">
+                    <input type="checkbox" class="form-check-input input-rain-alert" />
+                    Notify me when rain is likely
+                </label>
+                <label class="alert-setting">
+                    High temperature alert (°C)
+                    <input type="number" class="form-control input-temp-threshold" min="10" max="55" placeholder="35" />
+                </label>
+            </div>
             {% if error_message %}
             <div class="alert alert-danger" role="alert" style="margin-top:12px;">
                 {{ error_message }}
@@ -84,6 +103,10 @@
                     <span class="weather__location-date">{{ time }}</span>
                 </p>
                 </div>
+                <div class="sun-times">
+                    <p>Sunrise: <span class="sunrise-value">{{ sunrise }}</span></p>
+                    <p>Sunset: <span class="sunset-value">{{ sunset }}</span></p>
+                </div>
                 <p class="weather__primary-stats">
                     Wind
                     <span class="weatherWindKph">{{ wind }}</span> kilometers per hours. pressure 
@@ -92,6 +115,8 @@
                     <span class="weatherMaxTemp">{{ MaxTemp }}</span>°. Minimum temperature is 
                     <span class="weatherMinTemp">{{ MinTemp}}</span>°.
                 </p>
+                <p class="rain-outlook">Rain outlook: <span class="rain-outlook-value">{{ rain_outlook }}</span></p>
+                <p class="updated-at-text">Updated <span class="updated-at">{{ updated_at }}</span></p>
 
             <ul class="forecast">
                 {% if forecast %}
@@ -104,6 +129,7 @@
                         <p class="forecastWindText">
                             Humidity: <span class="forecast-humidityValue">{{ item.humidity }}</span>
                         </p>
+                        <p class="forecastDescription">{{ item.description }}</p>
                     </li>
                     {% endfor %}
                 {% else %}

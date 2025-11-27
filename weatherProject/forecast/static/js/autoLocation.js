@@ -2,8 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('form[data-auto-url]');
     const main = document.querySelector('main[data-fallback-city]');
     const overlay = document.getElementById('loading-overlay');
+    const statusBanner = document.getElementById('status-banner');
     const locationInput = document.querySelector('.geo-input');
     const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    const favoritesListEl = document.querySelector('.favorites-list');
+    const saveFavoriteBtn = document.querySelector('.btn-save-favorite');
+    const rainAlertToggle = document.querySelector('.input-rain-alert');
+    const tempThresholdInput = document.querySelector('.input-temp-threshold');
 
     if (!form || !main || !csrfInput) {
         return;
@@ -13,8 +18,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const fallbackCity = main.dataset.fallbackCity || 'Colombo';
     const baseClasses = main.dataset.baseClasses || main.className;
     const hasInitialData = main.dataset.hasInitial === 'true';
+    const STORAGE_KEY = 'weather:last-context';
+    const FAVORITES_KEY = 'weather:favorites';
+    const ALERTS_KEY = 'weather:alerts';
+    let latestContext = null;
+
+    const showStatus = (message, variant = 'info') => {
+        if (!statusBanner) {
+            return;
+        }
+        statusBanner.textContent = message;
+        statusBanner.classList.remove('visually-hidden', 'info', 'error', 'success');
+        statusBanner.classList.add(variant);
+    };
+
+    const clearStatus = () => {
+        if (!statusBanner) {
+            return;
+        }
+        statusBanner.textContent = '';
+        statusBanner.classList.add('visually-hidden');
+        statusBanner.classList.remove('info', 'error', 'success');
+    };
 
     const markLoading = () => {
+        if (main.classList.contains('ready')) {
+            return;
+        }
         overlay?.classList.add('active');
         overlay?.classList.remove('hidden');
         main.classList.add('loading-state');
@@ -28,16 +58,173 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay?.classList.add('hidden');
     };
 
-    if (hasInitialData) {
-        markLoaded();
-        return;
-    }
-
     const safeValue = (value, fallback = '--') => {
         if (value === null || value === undefined || value === '') {
             return fallback;
         }
         return value;
+    };
+
+    const formatDateTime = (value) => {
+        if (!value) {
+            return '--';
+        }
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+        return parsed.toLocaleString();
+    };
+
+    const loadCachedContext = () => {
+        try {
+            const raw = window.localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.debug('Unable to read cached context', error);
+            return null;
+        }
+    };
+
+    const saveCachedContext = (data) => {
+        if (!data) {
+            return;
+        }
+        try {
+            const payload = {
+                ...data,
+                cachedAt: data.updated_at || new Date().toISOString(),
+            };
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+            console.debug('Unable to cache context', error);
+        }
+    };
+
+    const loadFavorites = () => {
+        try {
+            const raw = window.localStorage.getItem(FAVORITES_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (error) {
+            console.debug('Unable to load favorites', error);
+            return [];
+        }
+    };
+
+    const saveFavorites = (items) => {
+        try {
+            window.localStorage.setItem(FAVORITES_KEY, JSON.stringify(items));
+        } catch (error) {
+            console.debug('Unable to save favorites', error);
+        }
+    };
+
+    const renderFavorites = () => {
+        if (!favoritesListEl) {
+            return;
+        }
+        const favorites = loadFavorites();
+        favoritesListEl.innerHTML = '';
+        if (!favorites.length) {
+            const emptyText = favoritesListEl.dataset.emptyText || 'No favorites yet';
+            const li = document.createElement('li');
+            li.className = 'text-white-50';
+            li.textContent = emptyText;
+            favoritesListEl.appendChild(li);
+            return;
+        }
+        favorites.forEach((fav) => {
+            const li = document.createElement('li');
+            const selectBtn = document.createElement('button');
+            selectBtn.className = 'favorite-select';
+            selectBtn.type = 'button';
+            selectBtn.dataset.city = fav.city;
+            selectBtn.textContent = fav.country ? `${fav.city}, ${fav.country}` : fav.city;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'favorite-remove';
+            removeBtn.type = 'button';
+            removeBtn.dataset.city = fav.city;
+            removeBtn.setAttribute('aria-label', `Remove ${fav.city}`);
+            removeBtn.textContent = '✕';
+
+            li.appendChild(selectBtn);
+            li.appendChild(removeBtn);
+            favoritesListEl.appendChild(li);
+        });
+    };
+
+    const loadAlerts = () => {
+        try {
+            const raw = window.localStorage.getItem(ALERTS_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            console.debug('Unable to load alerts', error);
+            return {};
+        }
+    };
+
+    const saveAlerts = (settings) => {
+        try {
+            window.localStorage.setItem(ALERTS_KEY, JSON.stringify(settings));
+        } catch (error) {
+            console.debug('Unable to save alerts', error);
+        }
+    };
+
+    const syncAlertInputs = () => {
+        const settings = loadAlerts();
+        if (rainAlertToggle) {
+            rainAlertToggle.checked = Boolean(settings.rainAlert);
+        }
+        if (tempThresholdInput) {
+            tempThresholdInput.value = settings.tempAlertValue ?? '';
+        }
+    };
+
+    const requestNotificationPermission = () => {
+        if (!('Notification' in window)) {
+            return;
+        }
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    };
+
+    const sendBrowserNotification = (message) => {
+        if (!('Notification' in window)) {
+            return;
+        }
+        if (Notification.permission === 'granted') {
+            try {
+                new Notification('Weather Alert', { body: message });
+            } catch (error) {
+                console.debug('Unable to show notification', error);
+            }
+        }
+    };
+
+    const evaluateAlerts = (data) => {
+        if (!data) {
+            return;
+        }
+        const settings = loadAlerts();
+        const messages = [];
+
+        if (settings.rainAlert && data.rain_outlook && data.rain_outlook.toLowerCase().includes('likely')) {
+            messages.push(`Rain likely soon in ${data.city}.`);
+        }
+
+        const maxTemp = parseFloat(data.MaxTemp);
+        if (settings.tempAlertValue && !Number.isNaN(maxTemp) && maxTemp >= Number(settings.tempAlertValue)) {
+            messages.push(`High temperature alert: up to ${data.MaxTemp}°C.`);
+        }
+
+        if (messages.length) {
+            const combined = messages.join(' ');
+            showStatus(combined, 'success');
+            sendBrowserNotification(combined);
+        }
     };
 
     const setText = (selector, value) => {
@@ -73,15 +260,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="forecastWindText">
                     Humidity: <span class="forecast-humidityValue">${safeValue(item.humidity)}</span>
                 </p>
+                <p class="forecastDescription">${safeValue(item.description, '')}</p>
             `;
             list.appendChild(li);
         });
     };
 
-    const applyWeatherContext = (data) => {
+    const applyWeatherContext = (data, { fromCache = false } = {}) => {
         if (!data) {
             return;
         }
+        latestContext = data;
         if (locationInput && data.location) {
             locationInput.value = data.location;
         }
@@ -98,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('.weatherSnow', data.visibility);
         setText('.weatherMaxTemp', data.MaxTemp);
         setText('.weatherMinTemp', data.MinTemp);
+        setText('.sunrise-value', data.sunrise);
+        setText('.sunset-value', data.sunset);
+        setText('.rain-outlook-value', data.rain_outlook);
+        setText('.updated-at', formatDateTime(data.updated_at));
 
         const mainElement = main;
         if (mainElement && baseClasses) {
@@ -115,14 +308,22 @@ document.addEventListener('DOMContentLoaded', () => {
             window.renderForecastChart();
         }
 
+        if (!fromCache) {
+            saveCachedContext(data);
+            clearStatus();
+        }
+
+        evaluateAlerts(data);
         markLoaded();
     };
 
-    const fetchWeather = (payload) => {
+    const fetchWeather = (payload = {}, { skipLoading = false } = {}) => {
         if (!autoUrl) {
             return Promise.resolve();
         }
-        markLoading();
+        if (!skipLoading) {
+            markLoading();
+        }
         return fetch(autoUrl, {
             method: 'POST',
             headers: {
@@ -140,19 +341,34 @@ document.addEventListener('DOMContentLoaded', () => {
             .then((data) => applyWeatherContext(data))
             .catch((error) => {
                 console.debug('Auto weather request failed', error);
+                showStatus('Unable to fetch the latest weather. Showing saved data if available.', 'error');
                 markLoaded();
             });
     };
 
+    if (hasInitialData) {
+        markLoaded();
+        return;
+    }
+
+    const cachedContext = loadCachedContext();
+    if (cachedContext) {
+        applyWeatherContext(cachedContext, { fromCache: true });
+        const when = cachedContext.cachedAt ? formatDateTime(cachedContext.cachedAt) : 'earlier';
+        showStatus(`Showing saved forecast from ${when} while we fetch fresh data.`, 'info');
+    }
+
     let geolocationResolved = false;
     let fallbackRequested = false;
 
-    const triggerFallback = () => {
-        if (fallbackRequested) {
+    const triggerFallback = (force = false) => {
+        if (fallbackRequested && !force) {
             return;
         }
         fallbackRequested = true;
-        fetchWeather({ fallback_city: fallbackCity });
+        fetchWeather({ fallback_city: fallbackCity }).finally(() => {
+            fallbackRequested = false;
+        });
     };
 
     let fallbackTimer = null;
@@ -192,5 +408,80 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     } else {
         triggerFallback();
+    }
+
+    window.addEventListener('offline', () => {
+        showStatus('You appear to be offline. Showing saved forecast.', 'error');
+    });
+
+    window.addEventListener('online', () => {
+        clearStatus();
+        if (!hasInitialData) {
+            triggerFallback(true);
+        }
+    });
+
+    renderFavorites();
+    syncAlertInputs();
+
+    if (saveFavoriteBtn) {
+        saveFavoriteBtn.addEventListener('click', () => {
+            if (!latestContext || !latestContext.city) {
+                showStatus('No city data to save yet.', 'error');
+                return;
+            }
+            const favorites = loadFavorites();
+            const exists = favorites.some((fav) => fav.city.toLowerCase() === latestContext.city.toLowerCase());
+            if (exists) {
+                showStatus('City already in favorites.', 'info');
+                return;
+            }
+            const nextFavorites = [{ city: latestContext.city, country: latestContext.country }, ...favorites].slice(0, 10);
+            saveFavorites(nextFavorites);
+            renderFavorites();
+            showStatus(`${latestContext.city} saved to favorites.`, 'success');
+        });
+    }
+
+    if (favoritesListEl) {
+        favoritesListEl.addEventListener('click', (event) => {
+            const target = event.target;
+            if (target.matches('.favorite-select')) {
+                const city = target.dataset.city;
+                if (city) {
+                    fetchWeather({ city });
+                }
+            }
+            if (target.matches('.favorite-remove')) {
+                const city = target.dataset.city;
+                const favorites = loadFavorites().filter((fav) => fav.city !== city);
+                saveFavorites(favorites);
+                renderFavorites();
+            }
+        });
+    }
+
+    if (rainAlertToggle) {
+        rainAlertToggle.addEventListener('change', () => {
+            const settings = loadAlerts();
+            settings.rainAlert = rainAlertToggle.checked;
+            saveAlerts(settings);
+            if (rainAlertToggle.checked) {
+                requestNotificationPermission();
+                showStatus('Rain alerts enabled.', 'success');
+            }
+        });
+    }
+
+    if (tempThresholdInput) {
+        tempThresholdInput.addEventListener('change', () => {
+            const value = tempThresholdInput.value;
+            const settings = loadAlerts();
+            settings.tempAlertValue = value ? Number(value) : '';
+            saveAlerts(settings);
+            if (value) {
+                showStatus(`High temperature alert set to ${value}°C.`, 'success');
+            }
+        });
     }
 });

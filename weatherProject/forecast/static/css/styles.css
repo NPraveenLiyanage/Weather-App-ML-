@@ -46,6 +46,31 @@ body {
     font-size: 16px;
 }
 
+.status-banner {
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.status-banner.info {
+    background: rgba(13, 110, 253, 0.65);
+}
+
+.status-banner.error {
+    background: rgba(220, 53, 69, 0.75);
+}
+
+.status-banner.success {
+    background: rgba(25, 135, 84, 0.65);
+}
+
+.status-banner.visually-hidden {
+    display: none;
+}
+
 main {
     position: absolute;
     display: flex;
@@ -299,6 +324,82 @@ main.clear {
     margin-bottom: 50px;
 }
 
+.panel-title {
+    width: 100%;
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.favorites-panel,
+.alerts-panel {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.favorites-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 12px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.favorites-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ffffff;
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+.favorites-list button {
+    border: none;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.favorites-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-save-favorite {
+    font-size: 12px;
+}
+
+.alert-setting {
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+    font-size: 12px;
+    margin-bottom: 8px;
+    gap: 6px;
+}
+
+.sun-times {
+    display: flex;
+    gap: 20px;
+    color: #ffffff;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.rain-outlook,
+.updated-at-text {
+    color: #ffffff;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
 .forecast {
     display: flex;
     justify-content: space-between;
@@ -337,6 +438,12 @@ main.clear {
     font-size: 40px;
     font-weight: 300;
     line-height: 100%;
+}
+
+.forecastDescription {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    text-align: center;
 }
 
 #chart {
