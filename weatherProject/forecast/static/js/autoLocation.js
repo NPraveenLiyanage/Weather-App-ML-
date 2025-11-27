@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const personalizationDrawer = document.getElementById('personalization-drawer');
     const drawerCloseBtn = document.querySelector('.drawer-close');
     const bookmarkTrigger = document.querySelector('.bookmark-trigger');
+    const drawerOverlay = document.getElementById('drawer-overlay');
 
     if (!form || !main || !csrfInput) {
         return;
@@ -537,6 +538,11 @@ document.addEventListener('DOMContentLoaded', () => {
         personalizationDrawer.classList.toggle('open', open);
         personalizationDrawer.setAttribute('aria-hidden', open ? 'false' : 'true');
         settingsToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (drawerOverlay) {
+            drawerOverlay.classList.toggle('active', open);
+            drawerOverlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+        }
+        document.body.classList.toggle('drawer-open', open);
     };
 
     const isDrawerOpen = () => personalizationDrawer?.classList.contains('open');
@@ -548,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         drawerCloseBtn?.addEventListener('click', () => updateDrawerState(false));
+        drawerOverlay?.addEventListener('click', () => updateDrawerState(false));
 
         document.addEventListener('click', (event) => {
             if (!isDrawerOpen()) {

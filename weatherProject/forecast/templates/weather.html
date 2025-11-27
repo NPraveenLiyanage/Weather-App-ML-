@@ -25,6 +25,7 @@
         data-has-initial="{% if forecast %}true{% else %}false{% endif %}"
         data-server-error="{{ error_message|default_if_none:''|escape }}">
         <div id="status-banner" class="status-banner visually-hidden" role="status"></div>
+        <div id="drawer-overlay" class="drawer-overlay" aria-hidden="true"></div>
         <aside id="personalization-drawer" class="personalization-drawer" aria-hidden="true">
             <div class="drawer-header">
                 <div class="drawer-title">
