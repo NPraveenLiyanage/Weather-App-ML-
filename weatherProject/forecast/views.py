@@ -1,5 +1,8 @@
+import json
+
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 # Create your views here.
 
@@ -35,6 +38,9 @@ def fetch_current_weather(city):
     url = f"{BASE_URL}weather?q={city}&appid={API_Key}&units=metric" #construct the api request url
     response = requests.get(url)
     data = response.json()
+    if response.status_code != 200:
+        message = data.get('message', 'Unable to fetch weather data')
+        raise ValueError(message)
     return {
         'city': data['name'],
         'current_temp': round(data['main']['temp']),
@@ -49,6 +55,31 @@ def fetch_current_weather(city):
         'wind_gust_speed': data['wind']['speed'],
         'clouds':data['clouds']['all'],
         'Visibility':data['visibility'],
+    }
+
+def fetch_weather_by_coordinates(lat, lon):
+    lat = float(lat)
+    lon = float(lon)
+    url = f"{BASE_URL}weather?lat={lat}&lon={lon}&appid={API_Key}&units=metric"
+    response = requests.get(url)
+    data = response.json()
+    if response.status_code != 200:
+        message = data.get('message', 'Unable to fetch weather data')
+        raise ValueError(message)
+    return {
+        'city': data['name'],
+        'current_temp': round(data['main']['temp']),
+        'feels_like': round(data['main']['feels_like']),
+        'temp_min': round(data['main']['temp_min']),
+        'temp_max': round(data['main']['temp_max']),
+        'humidity': round(data['main']['humidity']),
+        'description': data['weather'][0]['description'],
+        'country': data['sys']['country'],
+        'wind_gust_dir': data['wind']['deg'],
+        'pressure': data['main']['pressure'],
+        'wind_gust_speed': data['wind']['speed'],
+        'clouds': data['clouds']['all'],
+        'Visibility': data['visibility'],
     }
 
 #Read historical data 
@@ -247,5 +278,28 @@ def weather_view(request):
 
 def healthz(request):
     # Simple health endpoint for load balancers and platform probes
-    from django.http import JsonResponse
     return JsonResponse({'status': 'ok'})
+
+
+@require_POST
+def auto_location(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request payload'}, status=400)
+
+    lat = payload.get('lat')
+    lon = payload.get('lon')
+    if lat is None or lon is None:
+        return JsonResponse({'error': 'Missing coordinates'}, status=400)
+
+    try:
+        current_weather = fetch_weather_by_coordinates(lat, lon)
+    except Exception:
+        logging.exception('Unable to fetch weather for coordinates %s, %s', lat, lon)
+        return JsonResponse({'error': 'Unable to determine your location'}, status=502)
+
+    return JsonResponse({
+        'city': current_weather['city'],
+        'country': current_weather['country'],
+    })

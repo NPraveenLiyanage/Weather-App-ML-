@@ -13,7 +13,7 @@
 <body>
     <main class="{{description}}">
         <section class="side-container">
-            <form method="POST">
+            <form method="POST" data-auto-url="{% url 'auto_location' %}">
                 {% csrf_token %}
                 <div class="search-container">
                     <div style="width: 22px; height: 22px; color: white;" class="weather-icon">
@@ -148,6 +148,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{% static 'js/chartSetup.js' %}"></script>
+    <script src="{% static 'js/autoLocation.js' %}"></script>
 
 </body>
 </html>
