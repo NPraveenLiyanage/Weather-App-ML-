@@ -66,8 +66,3 @@ python manage.py runserver
 - numpy
 - scikit-learn
 - python-dotenv
-
-
-```
-
-
