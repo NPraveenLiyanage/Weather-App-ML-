@@ -19,4 +19,4 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Entrypoint will run migrations, collectstatic and then start the server
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["gunicorn", "weatherProject.wsgi:application", "--bind", "0.0.0.0:${PORT:-8000}"]
+CMD ["gunicorn", "weatherProject.wsgi:application"]

@@ -1,13 +1,17 @@
 #!/bin/sh
 set -e
 
-# Collect static files at container start (safe); migrations should be run separately
-python manage.py collectstatic --noinput || true
+PROJECT_ROOT="/app/weatherProject"
 
-# Use PORT env var if provided (Vercel sets $PORT), otherwise default 8000
-: "${PORT:=8000}"
-if [ -z "$1" ]; then
-exec gunicorn weatherProject.wsgi:application --bind 0.0.0.0:${PORT}
-else
-exec "$@"
+# Collect static files at container start (safe); migrations should be run separately
+python "$PROJECT_ROOT/manage.py" collectstatic --noinput || true
+
+# Ensure we always bind to the port Render provides (default 8000 when unset)
+PORT="${PORT:-8000}"
+
+if [ "$1" = "gunicorn" ]; then
+	shift
+	exec gunicorn "$@" --bind "0.0.0.0:${PORT}"
 fi
+
+exec "$@"
