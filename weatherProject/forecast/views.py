@@ -30,6 +30,7 @@ if not API_Key:
         # If settings can't be imported, leave API_Key as None
         pass
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
+DEFAULT_CITY = os.environ.get('DEFAULT_CITY', 'Colombo')
 
 
 #Fetch current weather data
@@ -156,106 +157,101 @@ def predict_future(model, current_value):
   return predictions[1:]
 
 
+def _description_class(description: str) -> str:
+    if not description:
+        return 'no-forecast'
+    primary = description.split()[0].lower()
+    return primary
+
+
+def build_weather_context(city, *, current_weather=None):
+    if not city:
+        raise ValueError('City name is required')
+
+    if current_weather is None:
+        current_weather = fetch_current_weather(city)
+
+    # Use a path relative to this file to find the project's weather.csv
+    csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'weather.csv'))
+    data = read_historical_data(csv_path)
+    X, y, le = prepare_data(data)
+    rain_model = train_rain_model(X, y)
+
+    wind_deg = current_weather['wind_gust_dir'] % 360
+    compass_points = [
+        ("N", 0, 11.25), ("NNE", 11.25, 33.75), ("NE", 33.75, 56.25),
+        ("ENE", 56.25, 78.75), ("E", 78.75, 101.25), ("ESE", 101.25, 123.75),
+        ("SE", 123.75, 146.25), ("SSE", 146.25, 168.75), ("S", 168.75, 191.25),
+        ("SSW", 191.25, 213.75), ("SW", 213.75, 236.25), ("WSW", 236.25, 258.75),
+        ("W", 258.75, 281.25), ("WNW", 281.25, 303.75), ("NW", 303.75, 326.25),
+        ("NNW", 326.25, 348.75)
+    ]
+    compass_direction = next((point for point, start, end in compass_points if start < wind_deg < end), "Unknown")
+    if compass_direction != "Unknown" and compass_direction in le.classes_:
+        compass_direction_encoded = le.transform([compass_direction])[0]
+    else:
+        compass_direction_encoded = -1
+
+    current_data = {
+        'MinTemp': current_weather['temp_min'],
+        'MaxTemp': current_weather['temp_max'],
+        'WindGustDir': compass_direction_encoded,
+        'WindGustSpeed': current_weather['wind_gust_speed'],
+        'Humidity': current_weather['humidity'],
+        'Pressure': current_weather['pressure'],
+        'Temp': current_weather['current_temp'],
+    }
+    current_df = pd.DataFrame([current_data])
+    rain_model.predict(current_df)[0]  # Currently unused but ensures the model runs
+
+    X_temp, y_temp = prepare_regression_data(data, 'Temp')
+    X_hum, y_hum = prepare_regression_data(data, 'Humidity')
+    temp_model = train_regression_model(X_temp, y_temp)
+    hum_model = train_regression_model(X_hum, y_hum)
+
+    future_temp = predict_future(temp_model, current_weather['temp_min'])
+    future_humidity = predict_future(hum_model, current_weather['humidity'])
+
+    timezone = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(timezone)
+    next_hour = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+    future_times = [(next_hour + timedelta(hours=i)).strftime("%H:00") for i in range(5)]
+
+    forecast = []
+    for time_label, temp_val, hum_val in zip(future_times, future_temp, future_humidity):
+        forecast.append({
+            'time': time_label,
+            'temp': f"{round(temp_val, 1)}",
+            'humidity': f"{round(hum_val, 1)}",
+        })
+
+    context = {
+        'location': city,
+        'current_temp': str(current_weather['current_temp']),
+        'MinTemp': str(current_weather['temp_min']),
+        'MaxTemp': str(current_weather['temp_max']),
+        'feels_like': str(current_weather['feels_like']),
+        'humidity': str(current_weather['humidity']),
+        'clouds': str(current_weather['clouds']),
+        'description': current_weather['description'],
+        'description_class': _description_class(current_weather['description']),
+        'city': current_weather['city'],
+        'country': current_weather['country'],
+        'time': now.strftime("%I:%M %p"),
+        'date': now.strftime("%B %d, %Y"),
+        'wind': str(current_weather['wind_gust_speed']),
+        'pressure': str(current_weather['pressure']),
+        'visibility': str(current_weather['Visibility']),
+        'forecast': forecast,
+    }
+    return context
+
+
 #Weather analysis function
 def weather_view(request):
-    if request.method == 'POST':
-        city = request.POST.get('city')
-        error_message = None
-        current_weather = None
-        try:
-            current_weather = fetch_current_weather(city)
-        except Exception as e:
-            error_message = "Invalid city name or unable to fetch weather data. Please enter a valid city."
-        if not current_weather or 'city' not in current_weather:
-            error_message = "Invalid city name or unable to fetch weather data. Please enter a valid city."
-        if error_message:
-            return render(request, 'weather.html', {'error_message': error_message})
-        try:
-            # Use a path relative to this file to find the project's weather.csv
-            csv_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'weather.csv'))
-            data = read_historical_data(csv_path)
-            X, y, le = prepare_data(data)
-            rain_model = train_rain_model(X, y)
-            wind_deg = current_weather['wind_gust_dir'] % 360
-            compass_points = [
-                ("N", 0, 11.25), ("NNE", 11.25, 33.75), ("NE", 33.75, 56.25),
-                ("ENE", 56.25, 78.75), ("E", 78.75, 101.25), ("ESE", 101.25, 123.75),
-                ("SE", 123.75, 146.25), ("SSE", 146.25, 168.75), ("S", 168.75, 191.25),
-                ("SSW", 191.25, 213.75), ("SW", 213.75, 236.25), ("WSW", 236.25, 258.75),
-                ("W", 258.75, 281.25), ("WNW", 281.25, 303.75), ("NW", 303.75, 326.25),
-                ("NNW", 326.25, 348.75)
-            ]
-            compass_direction = next((point for point, start, end in compass_points if start < wind_deg < end), "Unknown")
-            if compass_direction != "Unknown" and compass_direction in le.classes_:
-                compass_direction_encoded = le.transform([compass_direction])[0]
-            else:
-                compass_direction_encoded = -1
-            current_data = {
-                'MinTemp': current_weather['temp_min'],
-                'MaxTemp': current_weather['temp_max'],
-                'WindGustDir': compass_direction_encoded,
-                'WindGustSpeed': current_weather['wind_gust_speed'],
-                'Humidity': current_weather['humidity'],
-                'Pressure': current_weather['pressure'],
-                'Temp': current_weather['current_temp'],
-            }
-            current_df = pd.DataFrame([current_data])
-            rain_prediction = rain_model.predict(current_df)[0]
-            X_temp, y_temp = prepare_regression_data(data, 'Temp')
-            X_hum, y_hum = prepare_regression_data(data, 'Humidity')
-            temp_model = train_regression_model(X_temp, y_temp)
-            hum_model = train_regression_model(X_hum, y_hum)
-            future_temp = predict_future(temp_model, current_weather['temp_min'])
-            future_humidity = predict_future(hum_model, current_weather['humidity'])
-            timezone = pytz.timezone('Asia/Kolkata')
-            now = datetime.now(timezone)
-            next_hour = now + timedelta(hours=1)
-            next_hour = next_hour.replace(minute=0, second=0, microsecond=0)
-            future_times = [(next_hour + timedelta(hours=i)).strftime("%H:00") for i in range(5)]
-            time1, time2, time3, time4, time5 = future_times
-            temp1, temp2, temp3, temp4, temp5 = future_temp
-            hum1, hum2, hum3, hum4, hum5 = future_humidity
-            context = {
-                'location': city,
-                'current_temp': current_weather['current_temp'],
-                'MinTemp': current_weather['temp_min'],
-                'MaxTemp': current_weather['temp_max'],
-                'feels_like': current_weather['feels_like'],
-                'humidity': current_weather['humidity'],
-                'clouds': current_weather['clouds'],
-                'description': current_weather['description'],
-                'city': current_weather['city'],
-                'country': current_weather['country'],
-                'time': datetime.now(),
-                'date': datetime.now().strftime("%B %d, %Y"),
-                'wind': current_weather['wind_gust_speed'],
-                'pressure': current_weather['pressure'],
-                'visibility': current_weather['Visibility'],
-                'time1': time1,
-                'time2': time2,
-                'time3': time3,
-                'time4': time4,
-                'time5': time5,
-                'temp1': f"{round(temp1, 1)}",
-                'temp2': f"{round(temp2, 1)}",
-                'temp3': f"{round(temp3, 1)}",
-                'temp4': f"{round(temp4, 1)}",
-                'temp5': f"{round(temp5, 1)}",
-                'hum1': f"{round(hum1, 1)}",
-                'hum2': f"{round(hum2, 1)}",
-                'hum3': f"{round(hum3, 1)}",
-                'hum4': f"{round(hum4, 1)}",
-                'hum5': f"{round(hum5, 1)}",
-            }
-            return render(request, 'weather.html', context)
-        except Exception as e:
-            logging.exception('Error processing weather request')
-            error_message = f"An error occurred while processing your request: {e}"
-            return render(request, 'weather.html', {'error_message': error_message})
-    # Provide default values for forecast variables to avoid JS errors on initial GET
-    # Provide defaults so the template renders useful placeholders on initial GET
-    return render(request, 'weather.html', {
+    base_context = {
         'description': 'No forecast yet',
+        'description_class': 'no-forecast',
         'location': '',
         'current_temp': '--',
         'feels_like': '--',
@@ -270,10 +266,34 @@ def weather_view(request):
         'visibility': '--',
         'MinTemp': '--',
         'MaxTemp': '--',
-        'time1': '', 'time2': '', 'time3': '', 'time4': '', 'time5': '',
-        'temp1': '', 'temp2': '', 'temp3': '', 'temp4': '', 'temp5': '',
-        'hum1': '', 'hum2': '', 'hum3': '', 'hum4': '', 'hum5': ''
-    })
+        'forecast': [],
+        'fallback_city': DEFAULT_CITY,
+    }
+
+    if request.method == 'POST':
+        city = request.POST.get('city')
+        if not city:
+            return render(request, 'weather.html', {
+                **base_context,
+                'error_message': 'Please enter a city name.',
+            })
+        try:
+            context = build_weather_context(city)
+        except ValueError as exc:
+            return render(request, 'weather.html', {
+                **base_context,
+                'error_message': str(exc),
+            })
+        except Exception as exc:
+            logging.exception('Error processing weather request')
+            return render(request, 'weather.html', {
+                **base_context,
+                'error_message': f"An error occurred while processing your request: {exc}",
+            })
+        context['fallback_city'] = DEFAULT_CITY
+        return render(request, 'weather.html', context)
+
+    return render(request, 'weather.html', base_context)
 
 
 def healthz(request):
@@ -290,16 +310,23 @@ def auto_location(request):
 
     lat = payload.get('lat')
     lon = payload.get('lon')
-    if lat is None or lon is None:
-        return JsonResponse({'error': 'Missing coordinates'}, status=400)
+    fallback_city = payload.get('fallback_city')
 
     try:
-        current_weather = fetch_weather_by_coordinates(lat, lon)
-    except Exception:
-        logging.exception('Unable to fetch weather for coordinates %s, %s', lat, lon)
-        return JsonResponse({'error': 'Unable to determine your location'}, status=502)
+        if lat is not None and lon is not None:
+            current_weather = fetch_weather_by_coordinates(lat, lon)
+            city = current_weather['city']
+        elif fallback_city:
+            current_weather = None
+            city = fallback_city
+        else:
+            return JsonResponse({'error': 'Missing coordinates'}, status=400)
 
-    return JsonResponse({
-        'city': current_weather['city'],
-        'country': current_weather['country'],
-    })
+        context = build_weather_context(city, current_weather=current_weather)
+        context['fallback_city'] = DEFAULT_CITY
+        return JsonResponse(context)
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+    except Exception:
+        logging.exception('Unable to fetch weather data for auto location request')
+        return JsonResponse({'error': 'Unable to determine your location'}, status=502)

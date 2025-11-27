@@ -11,7 +11,15 @@
     <title>Weather Forecast</title>
 </head>
 <body>
-    <main class="{{description}}">
+    <div id="loading-overlay" class="loading-overlay {% if forecast %}hidden{% else %}active{% endif %}" aria-live="polite">
+        <div class="loading-overlay__card">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="loading-overlay__text">Fetching weather near you…</p>
+        </div>
+    </div>
+    <main class="weather-shell {{ description_class|default:'no-forecast' }} {% if forecast %}ready{% else %}loading-state{% endif %}" data-fallback-city="{{ fallback_city }}" data-base-classes="weather-shell" data-has-initial="{% if forecast %}true{% else %}false{% endif %}">
         <section class="side-container">
             <form method="POST" data-auto-url="{% url 'auto_location' %}">
                 {% csrf_token %}
@@ -86,60 +94,20 @@
                 </p>
 
             <ul class="forecast">
-                {% if time1 and temp1 and hum1 %}
-                <li class="forecast_item">
-                    <p class="forecast-time">{{ time1 }}</p>
-                    <p class="forecast-temperature">
-                        &nbsp;<span class="forecast-temperatureValue">{{ temp1 }}</span>°
-                    </p>
-                    <p class="forecastWindText">
-                        Humidity: <span class="forecast-humidityValue">{{ hum1 }}</span>
-                    </p>
-                </li>
-                {% endif %}
-                {% if time2 and temp2 and hum2 %}
-                <li class="forecast_item">
-                    <p class="forecast-time">{{ time2 }}</p>
-                    <p class="forecast-temperature">
-                        &nbsp;<span class="forecast-temperatureValue">{{ temp2 }}</span>°
-                    </p>
-                    <p class="forecastWindText">
-                        Humidity: <span class="forecast-humidityValue">{{ hum2 }}</span>
-                    </p>
-                </li>
-                {% endif %}
-                {% if time3 and temp3 and hum3 %}
-                <li class="forecast_item">
-                    <p class="forecast-time">{{ time3 }}</p>
-                    <p class="forecast-temperature">
-                        &nbsp;<span class="forecast-temperatureValue">{{ temp3 }}</span>°
-                    </p>
-                    <p class="forecastWindText">
-                        Humidity: <span class="forecast-humidityValue">{{ hum3 }}</span>
-                    </p>
-                </li>
-                {% endif %}
-                {% if time4 and temp4 and hum4 %}
-                <li class="forecast_item">
-                    <p class="forecast-time">{{ time4 }}</p>
-                    <p class="forecast-temperature">
-                        &nbsp;<span class="forecast-temperatureValue">{{ temp4 }}</span>°
-                    </p>
-                    <p class="forecastWindText">
-                        Humidity: <span class="forecast-humidityValue">{{ hum4 }}</span>
-                    </p>
-                </li>
-                {% endif %}
-                {% if time5 and temp5 and hum5 %}
-                <li class="forecast_item">
-                    <p class="forecast-time">{{ time5 }}</p>
-                    <p class="forecast-temperature">
-                        &nbsp;<span class="forecast-temperatureValue">{{ temp5 }}</span>°
-                    </p>
-                    <p class="forecastWindText">
-                        Humidity: <span class="forecast-humidityValue">{{ hum5 }}</span>
-                    </p>
-                </li>
+                {% if forecast %}
+                    {% for item in forecast %}
+                    <li class="forecast_item">
+                        <p class="forecast-time">{{ item.time }}</p>
+                        <p class="forecast-temperature">
+                            &nbsp;<span class="forecast-temperatureValue">{{ item.temp }}</span>°
+                        </p>
+                        <p class="forecastWindText">
+                            Humidity: <span class="forecast-humidityValue">{{ item.humidity }}</span>
+                        </p>
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="forecast_placeholder text-white-50">Forecast data will appear here.</li>
                 {% endif %}
             </ul>
             <canvas id="chart" height="45px"></canvas>
