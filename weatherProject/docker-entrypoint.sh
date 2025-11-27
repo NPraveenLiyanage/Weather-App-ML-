@@ -1,7 +1,11 @@
 #!/bin/sh
 set -e
 
-PROJECT_ROOT="/app/weatherProject"
+APP_ROOT="/app"
+PROJECT_ROOT="$APP_ROOT/weatherProject"
+
+# Ensure Django project is importable regardless of working dir
+export PYTHONPATH="$APP_ROOT:$PROJECT_ROOT:${PYTHONPATH:-}"
 
 # Collect static files at container start (safe); migrations should be run separately
 python "$PROJECT_ROOT/manage.py" collectstatic --noinput || true
