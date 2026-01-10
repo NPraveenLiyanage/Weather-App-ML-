@@ -30,6 +30,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image name
+        id: image
+        run: |
+          IMAGE_NAME="${GITHUB_REPOSITORY%-}"
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
@@ -38,9 +44,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ steps.image.outputs.image_name }}:latest
+            ghcr.io/${{ steps.image.outputs.image_name }}:${{ github.sha }}
 
       - name: Image information
         run: |
-          echo "IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "IMAGE=ghcr.io/${{ steps.image.outputs.image_name }}:${{ github.sha }}" >> $GITHUB_OUTPUT
