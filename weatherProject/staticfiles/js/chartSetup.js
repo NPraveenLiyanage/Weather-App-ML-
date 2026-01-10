@@ -1,78 +1,121 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const chartElement = document.getElementById('chart');
-    if (!chartElement) {
-        console.log('Canvas Element not found!');
-        return;
-    }
-
-    const ctx = chartElement.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, -10, 0, 100);
-    gradient.addColorStop(0, 'rgba(250, 0, 0, 1)');
-    gradient.addColorStop(1, 'rgba(136, 255, 0, 1)');
-
-    const forecastItems = document.querySelectorAll('.forecast_item');
-
-    const temps = [];
-    const times = [];
-
-    forecastItems.forEach(item => {
-        const time = item.querySelector('.forecast-time').textContent;
-        const tempText = item.querySelector('.forecast-temperatureValue').textContent;
-        const humText = item.querySelector('.forecast-humidityValue').textContent;
-
-        const temp = parseFloat(tempText);
-        const hum = parseFloat(humText);
-
-        if (time && !isNaN(temp) && !isNaN(hum)) {
-            times.push(time);
-            temps.push(temp);
+(function () {
+    const renderForecastChart = () => {
+        const chartElement = document.getElementById('chart');
+        if (!chartElement) {
+            return;
         }
-    });
 
-    if (temps.length === 0 || times.length === 0 ) {
-        console.error('Temp or Time values are missing.');
-        return;
-    }
+        const forecastItems = document.querySelectorAll('.forecast_item');
+        if (!forecastItems.length) {
+            if (window.forecastChartInstance) {
+                window.forecastChartInstance.destroy();
+                window.forecastChartInstance = null;
+            }
+            return;
+        }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: times,
-            datasets: [
-                {
-                    label:'Celsius Degrees',
-                    data: temps,
-                    borderColor: gradient,
-                    borderWidth: 2,
-                    tension: 0.4,
-                    pointRadius: 2,
-                },
-            ],
-        },
-        options:{
-            plugins: {
-                legend: {
-                    display: false,
-                },
+        const temps = [];
+        const times = [];
+
+        forecastItems.forEach((item) => {
+            const timeEl = item.querySelector('.forecast-time');
+            const tempEl = item.querySelector('.forecast-temperatureValue');
+            const humEl = item.querySelector('.forecast-humidityValue');
+            if (!timeEl || !tempEl || !humEl) {
+                return;
+            }
+            const time = timeEl.textContent.trim();
+            const temp = parseFloat(tempEl.textContent.trim());
+            const hum = humEl.textContent.trim();
+            if (time && !Number.isNaN(temp) && hum) {
+                times.push(time);
+                temps.push(temp);
+            }
+        });
+
+        const MAX_POINTS = 5;
+        if (times.length > MAX_POINTS) {
+            times.splice(MAX_POINTS);
+            temps.splice(MAX_POINTS);
+        }
+
+        if (!temps.length || temps.length !== times.length) {
+            if (window.forecastChartInstance) {
+                window.forecastChartInstance.destroy();
+                window.forecastChartInstance = null;
+            }
+            return;
+        }
+
+        if (window.forecastChartInstance) {
+            window.forecastChartInstance.destroy();
+        }
+
+        const ctx = chartElement.getContext('2d');
+        const accentColor = '#ffb347';
+        const glowColor = 'rgba(255, 179, 71, 0.6)';
+
+        window.forecastChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: times,
+                datasets: [
+                    {
+                        label: 'Celsius Degrees',
+                        data: temps,
+                        borderColor: accentColor,
+                        borderWidth: 3,
+                        tension: 0.35,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHitRadius: 10,
+                        fill: false,
+                    },
+                ],
             },
-            scales:{
-                x: {
-                    display: false,
-                    grid: {
-                        drawOnChartArea: false,
+            options: {
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.parsed.y}°C`,
+                        },
                     },
                 },
-                y: {
-                    display: false,
-                    grid: {
-                        drawOnChartArea: false,
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        borderJoinStyle: 'round',
+                        borderCapStyle: 'round',
+                        shadowColor: glowColor,
+                        shadowBlur: 12,
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
                     },
                 },
+                scales: {
+                    x: {
+                        display: false,
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    y: {
+                        display: false,
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                },
+                animation: {
+                    duration: 600,
+                },
             },
-            animation: {
-                duration: 750,
-            },
-        },
-    });
-});
-const forecastItems = document.querySelectorAll('.forecast_item');
+        });
+    };
+
+    window.renderForecastChart = renderForecastChart;
+    document.addEventListener('DOMContentLoaded', renderForecastChart);
+})();

@@ -147,7 +147,16 @@ def _description_class(description: str) -> str:
     if not description:
         return 'no-forecast'
     primary = description.split()[0].lower()
-    return primary
+    synonyms = {
+        'broken': 'clouds',
+        'scattered': 'clouds',
+        'few': 'clouds',
+        'partly': 'clouds',
+        'light': 'light',
+        'moderate': 'moderate',
+        'heavy': 'rain',
+    }
+    return synonyms.get(primary, primary)
 
 
 def _format_timestamp(timestamp, tzinfo):
