@@ -1,0 +1,17 @@
+{
+  "days_compared": 688,
+  "input_mean_abs_diff": {
+    "tmax": 0.10319767441860465,
+    "tmin": 0.09985465116279069,
+    "rh": 0.0,
+    "pressure": 0.0,
+    "cloud": 0.0,
+    "gust": 0.0,
+    "precip": 0.0,
+    "dew": 0.0,
+    "rad": 0.0
+  },
+  "rain_prob_mean_abs_diff": 0.0,
+  "rain_call_flips_pct": 0.0,
+  "tmax_mean_abs_diff_c": 0.013800580546459034
+}

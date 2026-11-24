@@ -356,7 +356,7 @@ from . import predictor  # noqa: E402
 
 def forecast_page(request):
     cities = [{"key": k, "name": v[0], "lat": v[1], "lon": v[2]} for k, v in predictor.CITIES.items()]
-    return render(request, 'forecast.html', {"cities": cities, "track": predictor.track_record_summary()})
+    return render(request, 'forecast.html', {"cities": cities, "track": predictor.track_record_summary(), "sky": sky_manifest()})
 
 
 def _coords(request):
@@ -414,3 +414,54 @@ def island_api(request):
         logging.exception("island failed")
         return JsonResponse({"error": "Something went wrong while building the island view."}, status=500)
     return JsonResponse(data)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Fast "now" payload, installable-app plumbing (manifest + service worker)
+# ---------------------------------------------------------------------------------------------------------------------
+def now_api(request):
+    try:
+        lat, lon = _coords(request)
+        data = predictor.now_payload(lat, lon, request.GET.get("name") or None)
+    except predictor.ForecastError as exc:
+        return JsonResponse({"error": str(exc)}, status=422)
+    except Exception:
+        logging.exception("now failed")
+        return JsonResponse({"error": "Something went wrong while loading current conditions."}, status=500)
+    return JsonResponse(data)
+
+
+def _build_version():
+    """Changes whenever the page's files change, so the service worker's caches are replaced on every deploy."""
+    base = os.path.dirname(os.path.abspath(__file__))
+    files = [os.path.join(base, p) for p in ("static/js/weather.js", "static/css/weather.css", "templates/forecast.html", "templates/sw.js")]
+    return str(int(max(os.path.getmtime(f) for f in files if os.path.exists(f))))
+
+
+def service_worker(request):
+    resp = render(request, "sw.js", {"version": _build_version()}, content_type="application/javascript")
+    resp["Service-Worker-Allowed"] = "/"
+    resp["Cache-Control"] = "no-cache"
+    return resp
+
+
+def web_manifest(request):
+    from django.templatetags.static import static
+    return JsonResponse({
+        "name": "Sri Lanka Weather", "short_name": "SL Weather", "description": "Calibrated rain and temperature forecast for Sri Lanka",
+        "start_url": "/", "scope": "/", "display": "standalone", "background_color": "#0b1013", "theme_color": "#0b1013",
+        "icons": [{"src": static("img/icons/icon-192.png"), "sizes": "192x192", "type": "image/png"},
+                  {"src": static("img/icons/icon-512.png"), "sizes": "512x512", "type": "image/png"},
+                  {"src": static("img/icons/maskable-512.png"), "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]},
+        content_type="application/manifest+json")
+
+
+_SKY_MANIFEST = {}
+
+
+def sky_manifest():
+    if not _SKY_MANIFEST:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "img", "sky", "manifest.json")
+        with open(p, encoding="utf8") as fh:
+            _SKY_MANIFEST.update(json.load(fh))
+    return _SKY_MANIFEST

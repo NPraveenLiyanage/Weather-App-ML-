@@ -1,0 +1,64 @@
+{
+  "high": {
+    "A static quantiles": {
+      "coverage": 0.7046004842615012,
+      "mean_width_c": 2.0262279868509596
+    },
+    "B symmetric conformal": {
+      "coverage": 0.7568099273607748,
+      "mean_width_c": 2.0633056768752844
+    },
+    "C seasonal conformal": {
+      "coverage": 0.7657384987893463,
+      "mean_width_c": 2.0962068734730246
+    },
+    "D disagreement-scaled": {
+      "coverage": 0.7655871670702179,
+      "mean_width_c": 2.448943768259795
+    },
+    "seasonal_half_widths": {
+      "DJF": 0.9665664049315481,
+      "MAM": 1.028452644079426,
+      "JJAS": 1.0166216636500103,
+      "ON": 1.165582545817358
+    },
+    "spread_scale_k": 0.8277197043281015,
+    "deploy_seasonal_half_widths": {
+      "DJF": 1.0430828499573295,
+      "MAM": 1.0802020986272844,
+      "JJAS": 1.0384988283066998,
+      "ON": 1.179518317618664
+    }
+  },
+  "low": {
+    "A static quantiles": {
+      "coverage": 0.6817493946731235,
+      "mean_width_c": 1.394995029961977
+    },
+    "B symmetric conformal": {
+      "coverage": 0.715042372881356,
+      "mean_width_c": 1.4065609451216248
+    },
+    "C seasonal conformal": {
+      "coverage": 0.7144370460048426,
+      "mean_width_c": 1.4293599814585178
+    },
+    "D disagreement-scaled": {
+      "coverage": 0.7244249394673123,
+      "mean_width_c": 1.7409662725516992
+    },
+    "seasonal_half_widths": {
+      "DJF": 0.7226323334814175,
+      "MAM": 0.7230194848719345,
+      "JJAS": 0.6645565471940813,
+      "ON": 0.7720058743315192
+    },
+    "spread_scale_k": 0.6781418783936206,
+    "deploy_seasonal_half_widths": {
+      "DJF": 0.7692265534079077,
+      "MAM": 0.7698852924156164,
+      "JJAS": 0.7425932407147553,
+      "ON": 0.8226567955164102
+    }
+  }
+}

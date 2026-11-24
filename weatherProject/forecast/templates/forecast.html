@@ -2,22 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Weather Forecast · Sri Lanka</title>
   <meta name="description" content="Tomorrow's rain chance and temperature for any place in Sri Lanka, from seven weather models corrected by a machine-learning model that publishes its own scorecard.">
   <meta name="theme-color" content="#0b1013">
+  <link rel="manifest" href="{% url 'manifest' %}">
   <link rel="icon" href="{% static 'img/site-pic.ico' %}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+  <link rel="apple-touch-icon" href="{% static 'img/icons/apple-touch-icon.png' %}">
+  <link rel="preload" href="{% static 'fonts/poppins-300.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'fonts/poppins-400.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
   <link rel="stylesheet" href="{% static 'css/weather.css' %}">
+  <!-- Start downloading last visit's photo before any script runs -->
+  <script>
+    try {
+      var c = JSON.parse(localStorage.getItem("wx-cache") || "null");
+      if (c && c.scene) {
+        var l = document.createElement("link"); l.rel = "preload"; l.as = "image"; l.fetchPriority = "high";
+        l.href = "{% static 'img/sky/' %}" + c.scene + (matchMedia("(max-width: 700px)").matches ? "-p" : "-l") + ".webp";
+        document.head.appendChild(l);
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
 <a class="skip" href="#panel">Skip to forecast</a>
 
 <main class="shell is-loading" id="shell" data-static="{% static '' %}">
-  <!-- Condition photo: a blurred preview shows instantly, the sharp WebP fades in over it -->
-  <div class="sky" id="sky" aria-hidden="true"><img id="sky-img" alt="" decoding="async"></div>
+  <!-- Condition photo: a blurred preview (inlined, so it paints at once) with the sharp WebP fading in over it -->
+  <div class="sky" id="sky" aria-hidden="true"><img id="sky-img" alt="" decoding="async" fetchpriority="high"></div>
   <div class="sky-shade" aria-hidden="true"></div>
   <div class="status" id="status" role="status" aria-live="polite"></div>
 
@@ -38,7 +51,7 @@
       <button type="submit" aria-label="Search"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></svg></button>
       <ul class="suggest" id="suggest" role="listbox" hidden></ul>
     </form>
-    <button class="locate" id="btn-locate" type="button">◎ Use my location</button>
+    <div class="side-links"><button class="locate" id="btn-locate" type="button">◎ Use my location</button><button class="locate" id="btn-install" type="button" hidden>⤓ Install app</button></div>
 
     <div class="now">
       <h2 class="now-temp"><span id="n-temp">--</span>°</h2>
@@ -53,7 +66,7 @@
   </aside>
 
   <section class="main" id="panel">
-    <p class="eyebrow">Weather Forecast</p>
+    <p class="eyebrow">Weather Forecast <span class="upd" id="upd" hidden>· updating…</span></p>
     <h1 class="title" id="title">Loading…</h1>
     <p class="where"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg><span id="where">—</span></p>
     <p class="sun"><span>Sunrise: <b id="sunrise">--</b></span><span>Sunset: <b id="sunset">--</b></span></p>
@@ -69,15 +82,16 @@
 
     <div class="views">
       <section class="view" id="v-now" role="tabpanel" aria-labelledby="t-now">
-        <p class="outlook" id="outlook-line"></p>
+        <p class="outlook" id="outlook-line">Tomorrow's calibrated forecast is loading…</p>
         <div class="strip" id="strip"><canvas id="curve" aria-hidden="true"></canvas><ul id="strip-list"></ul></div>
+        <div class="env" id="env"></div>
       </section>
 
       <section class="view" id="v-tomorrow" role="tabpanel" aria-labelledby="t-tomorrow" hidden>
         <div class="tom">
           <div class="ring" id="ring" role="img"><div><b id="ring-p">--</b><span>chance of rain</span></div></div>
           <div class="tom-text">
-            <h2 id="tom-head">—</h2>
+            <h2 id="tom-head">Calibrating…</h2>
             <p id="tom-sub"></p>
             <div class="kv" id="kv"></div>
           </div>
@@ -91,13 +105,18 @@
 
       <section class="view" id="v-week" role="tabpanel" aria-labelledby="t-week" hidden>
         <div class="week" id="week"></div>
-        <p class="fine">Days 2 to 5 are the average of eight weather models. Our correction is trained and tested for tomorrow only, so these are not presented as calibrated odds.</p>
+        <p class="fine">Days 2 to 5 are the average of the weather models. Our correction is trained and tested for tomorrow only, so these are not presented as calibrated odds.</p>
       </section>
 
       <section class="view" id="v-island" role="tabpanel" aria-labelledby="t-island" hidden>
         <div class="island">
           <div class="map" id="map" aria-label="Map of Sri Lanka with tomorrow's rain chance for 16 cities"></div>
           <ol class="rank" id="rank"></ol>
+        </div>
+        <div class="glass watch" id="watch" hidden>
+          <h3>Heavy-rain watch for tomorrow <small>(model estimate, not an official warning)</small></h3>
+          <ul id="watch-list"></ul>
+          <p class="fine" id="watch-note"></p>
         </div>
         <p class="fine">Tomorrow's chance of 2.5 mm or more of rain. Click a place to open it. One model forecasts every place.</p>
       </section>
@@ -113,8 +132,9 @@
             <li><b>One model for the whole country.</b> It learned from 16 places together; when whole cities were hidden from training it forecast them just as well.</li>
             <li><b>Seven weather models, each weighed.</b> Simply averaging more models did not help. Letting the model learn how far to trust each one did, a modest but reliable gain on rain.</li>
             <li><b>A correction, not a rival to physics.</b> Weather models do the simulation. Ours weighs them, fixes their habits and says how sure to be.</li>
-            <li><b>Honest testing.</b> The scores come from 14 months of days the model never saw. Accuracy alone would flatter any rain model, so we show how well the percentages match reality.</li>
-            <li><b>Limits.</b> "Rain" means 2.5 mm or more in a day. "What happened" is a reanalysis estimate, not a rain gauge. Rain on one street can differ from the area average.</li>
+            <li><b>Honest testing.</b> The scores come from days the model never saw. Accuracy alone would flatter any rain model, so we show how well the percentages match reality.</li>
+            <li><b>Limits.</b> "Rain" means 2.5 mm or more in a day. "What happened" is a reanalysis estimate, not a rain gauge. Rain on one street can differ from the area average. Hourly rain, UV and air quality are the raw weather-service numbers, not ours.</li>
+            <li><b>Temperature ranges.</b> The weather drifted between our training months and the newest ones, so ranges sized on the older months alone covered only 71% to 77% of the newer days. They are now widened to cover about 8 in 10 of those newer days. That tuning used the same newer days, so treat 8 in 10 as the aim, not a proven promise.</li>
           </ul>
         </details>
       </section>
@@ -128,7 +148,7 @@
     <section><h3>Personal alerts</h3>
       <label class="check"><input type="checkbox" id="alert-on"> Notify me when tomorrow's rain chance for my first saved place reaches</label>
       <label class="sel"><select id="alert-th" aria-label="Alert threshold"><option>50</option><option selected>60</option><option>70</option><option>80</option></select> %</label>
-      <p class="fine">Works when you open this page. Your saved places and settings are kept only in this browser.</p>
+      <p class="fine">Alerts appear when you open the app. Your saved places and settings are kept only in this browser.</p>
     </section>
   </aside>
 </main>
@@ -140,6 +160,7 @@
 
 {{ cities|json_script:"cities-data" }}
 {{ track|json_script:"track-data" }}
-<script src="{% static 'js/weather.js' %}"></script>
+{{ sky|json_script:"sky-data" }}
+<script src="{% static 'js/weather.js' %}" defer></script>
 </body>
 </html>

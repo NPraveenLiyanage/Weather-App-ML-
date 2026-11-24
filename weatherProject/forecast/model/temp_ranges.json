@@ -1,0 +1,21 @@
+{
+  "high": {
+    "level": 0.85,
+    "half_widths": {
+      "DJF": 1.2153989989979435,
+      "MAM": 1.2248615974279131,
+      "JJAS": 1.1921935143425608,
+      "ON": 1.336886338024132
+    }
+  },
+  "low": {
+    "level": 0.88,
+    "half_widths": {
+      "DJF": 0.9684907914281204,
+      "MAM": 0.9522212191752931,
+      "JJAS": 0.9376092013292038,
+      "ON": 1.0015748738767551
+    }
+  },
+  "note": "Seasonal half-widths (C) from all out-of-fold residuals. Level chosen so ranges covered ~80% of the LATER, drifted months when calibrated on earlier data (tuned on that period, so not independent evidence)."
+}

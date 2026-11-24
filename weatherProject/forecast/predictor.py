@@ -33,6 +33,7 @@ SL_BOX = (5.7, 10.0, 79.4, 82.1)  # lat_min, lat_max, lon_min, lon_max: the regi
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 PREV_URL = "https://previous-runs-api.open-meteo.com/v1/forecast"
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+AIR_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 OBS_VARS = ["temperature_2m_max", "temperature_2m_min", "temperature_2m_mean", "precipitation_sum", "relative_humidity_2m_mean", "pressure_msl_mean",
             "dew_point_2m_mean", "cloud_cover_mean", "wind_gusts_10m_max", "wind_direction_10m_dominant", "shortwave_radiation_sum"]
 NWP_DAILY = ["precipitation_sum", "temperature_2m_max", "temperature_2m_min", "wind_gusts_10m_max", "relative_humidity_2m_mean", "pressure_msl_mean"]
@@ -62,6 +63,8 @@ def load_models():
             with open(os.path.join(MODEL_DIR, "rain_model.json"), encoding="utf8") as fh:
                 _models["rain"] = json.load(fh)
             _models["temp"] = joblib.load(os.path.join(MODEL_DIR, "temp_models.joblib"))
+            with open(os.path.join(MODEL_DIR, "temp_ranges.json"), encoding="utf8") as fh:
+                _models["ranges"] = json.load(fh)
             with open(os.path.join(MODEL_DIR, "rain_model_v2.json"), encoding="utf8") as fh:
                 _models["rain2"] = json.load(fh)
             with open(os.path.join(MODEL_DIR, "metrics_v2.json"), encoding="utf8") as fh:
@@ -72,6 +75,10 @@ def load_models():
             with open(os.path.join(MODEL_DIR, "metrics.json"), encoding="utf8") as fh:
                 _models["metrics"] = json.load(fh)
     return _models
+
+
+def _season_code(m: int) -> str:
+    return "DJF" if m in (12, 1, 2) else "MAM" if m in (3, 4) else "JJAS" if m in (5, 6, 7, 8, 9) else "ON"
 
 
 def _logit(x: np.ndarray, spec: dict) -> tuple[float, np.ndarray]:
@@ -244,26 +251,140 @@ def _predict(obs: dict, nwp: dict, lat: float, lon: float, name, extra=None, spe
     xt = row[F.TEMP_FEATURES]
     for key, col, fit in (("high", "nwp_tmax_mean", "tmax"), ("low", "nwp_tmin_mean", "tmin")):
         pred = float(s[col] + M["temp"][fit].predict(xt)[0])
-        lo, hi = M["rain"]["interval80"][fit]
-        out[key] = {"value": round(pred, 1), "low": round(pred + lo, 1), "high": round(pred + hi, 1), "raw_forecast": round(float(s[col]), 1)}
+        hw = M["ranges"][key]["half_widths"][_season_code(tomorrow.month)]
+        out[key] = {"value": round(pred, 1), "low": round(pred - hw, 1), "high": round(pred + hw, 1), "raw_forecast": round(float(s[col]), 1)}
     return out, nd, today
 
 
-def forecast(lat: float, lon: float, name=None) -> dict:
+def _uv_info(uv):
+    if uv is None:
+        return None
+    uv = float(uv)
+    level, advice = ("Low", "No protection needed.") if uv < 3 else ("Moderate", "Sunscreen and a hat if you are out for long.") if uv < 6 else \
+        ("High", "Cover up and use sunscreen between 10 AM and 4 PM.") if uv < 8 else ("Very high", "Avoid the midday sun; cover up and use sunscreen.") if uv < 11 else \
+        ("Extreme", "Stay out of the midday sun; full protection.")
+    return {"value": round(uv, 1), "level": level, "advice": advice}
+
+
+def _aqi_info(aqi, pm25):
+    if aqi is None:
+        return None
+    aqi = float(aqi)
+    level = "Good" if aqi <= 50 else "Moderate" if aqi <= 100 else "Unhealthy for sensitive groups" if aqi <= 150 else "Unhealthy" if aqi <= 200 else "Very unhealthy"
+    return {"aqi": round(aqi), "level": level, "pm25": None if pm25 is None else round(float(pm25), 1),
+            "note": "Estimated by the Copernicus atmosphere model (CAMS), not by a ground station."}
+
+
+def _commute(rows: list, now_hour: int) -> dict:
+    """Plain rain windows for the next 36 hours from the raw hourly forecast (not our calibrated model)."""
+    def label(h):
+        return f"{((h + 11) % 12) + 1} {'AM' if h % 24 < 12 else 'PM'}"
+    wins = []
+    for name, a, b in (("Morning commute", 7, 9), ("Evening commute", 17, 19)):
+        for day in (0, 1):
+            if day == 0 and now_hour >= b:
+                continue
+            pick = [r for r in rows if r["day"] == day and a <= r["hour"] < b]
+            if not pick:
+                continue
+            pop, mm = max(r["pop"] or 0 for r in pick), sum(r["mm"] or 0 for r in pick)
+            verdict = "Rain likely" if (mm >= 2.5 or (pop >= 70 and mm >= 1.0)) else "Showers possible" if (pop >= 40 or mm >= 0.3) else "Looks dry"
+            wins.append({"label": f"{name} {label(a)} to {label(b)}", "when": "today" if day == 0 else "tomorrow", "pop": int(pop), "mm": round(mm, 1), "verdict": verdict})
+            break
+    runs, cur = [], []
+    for r in rows[:24]:
+        wet = (r["mm"] or 0) >= 0.5 or ((r["pop"] or 0) >= 60 and (r["mm"] or 0) >= 0.2)
+        if wet:
+            cur.append(r)
+        elif cur:
+            runs.append(cur); cur = []
+    if cur:
+        runs.append(cur)
+    spans = []
+    for run in runs[:3]:
+        peak = max(run, key=lambda r: r["mm"] or 0)
+        spans.append({"from": run[0]["time"], "to": run[-1]["time"], "peak_mm": round(peak["mm"] or 0, 1), "peak_at": peak["time"]})
+    if spans:
+        s0 = spans[0]
+        headline = f"Rain expected from {s0['from']} to {s0['to']}" + (f" (heaviest around {s0['peak_at']})" if s0["peak_mm"] >= 1 else "")
+    else:
+        headline = "No significant rain expected in the next 24 hours"
+    return {"headline": headline, "spans": spans, "windows": wins, "source": "raw hourly forecast"}
+
+
+def now_payload(lat: float, lon: float, name=None) -> dict:
+    """FAST call: current conditions, 24 hours, sun, UV, air quality, commute windows. No model inference, so it can render immediately."""
     if not in_region(lat, lon):
         raise ForecastError("This forecast is trained and tested for Sri Lanka only. Please choose a location inside Sri Lanka.")
     lat, lon = round(float(lat), 3), round(float(lon), 3)
-    live_params = {"latitude": lat, "longitude": lon, "timezone": TZ, "forecast_days": 2, "wind_speed_unit": "kmh",
-                   "current": "temperature_2m,apparent_temperature,relative_humidity_2m,cloud_cover,wind_speed_10m,wind_gusts_10m,pressure_msl,visibility,weather_code,is_day,precipitation",
+    live_params = {"latitude": lat, "longitude": lon, "timezone": TZ, "forecast_days": 3, "wind_speed_unit": "kmh",
+                   "current": "temperature_2m,apparent_temperature,relative_humidity_2m,cloud_cover,wind_speed_10m,wind_gusts_10m,pressure_msl,visibility,weather_code,is_day,precipitation,uv_index",
                    "hourly": "temperature_2m,precipitation_probability,precipitation,weather_code,relative_humidity_2m,is_day",
-                   "daily": "sunrise,sunset,temperature_2m_max,temperature_2m_min"}
-    with ThreadPoolExecutor(1) as ex:
-        live_future = ex.submit(_get, FORECAST_URL, live_params, 600)
-        obs, nwp, extra = _fetch_forecast_inputs([lat], [lon])
-        live = live_future.result()
-    out, nd, today = _predict(obs[0], nwp[0], lat, lon, name, extra[0])
+                   "daily": "sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max"}
+    air_params = {"latitude": lat, "longitude": lon, "timezone": TZ, "current": "us_aqi,pm2_5"}
+    with ThreadPoolExecutor(2) as ex:
+        lf = ex.submit(_get, FORECAST_URL, live_params, 600)
+        af = ex.submit(_get_optional, AIR_URL, air_params)
+        live, air = lf.result(), af.result()
+    cur = live["current"]
+    desc = describe(cur["weather_code"], cur.get("is_day", 1))
+    out = {"location": {"name": name or f"{lat:.2f}, {lon:.2f}", "lat": lat, "lon": lon, "elevation": round(float(live.get("elevation", 0)))},
+           "generated_at": datetime.utcnow().isoformat() + "Z"}
+    out["now"] = {"temp": round(cur["temperature_2m"]), "feels": round(cur["apparent_temperature"]), "humidity": round(cur["relative_humidity_2m"]),
+                  "clouds": round(cur["cloud_cover"]), "wind_kmh": round(cur["wind_speed_10m"], 1), "gust_kmh": round(cur["wind_gusts_10m"], 1),
+                  "pressure": round(cur["pressure_msl"]), "visibility_km": round((cur.get("visibility") or 0) / 1000, 1), "mm": cur.get("precipitation", 0),
+                  "time": cur["time"][-5:], "description": desc["text"], "scene": desc["scene"], "night": desc["night"],
+                  "high_today": round(live["daily"]["temperature_2m_max"][0]), "low_today": round(live["daily"]["temperature_2m_min"][0])}
+    out["sun"] = {"sunrise": live["daily"]["sunrise"][0][-5:], "sunset": live["daily"]["sunset"][0][-5:]}
+    out["uv"] = {**(_uv_info(cur.get("uv_index")) or {}), "max_today": round(float(live["daily"]["uv_index_max"][0]), 1)} if cur.get("uv_index") is not None else None
+    out["air"] = _aqi_info((air or {}).get("current", {}).get("us_aqi"), (air or {}).get("current", {}).get("pm2_5")) if air else None
+    h = live["hourly"]
+    now_iso = cur["time"][:13]
+    start = max(0, next((i for i, t in enumerate(h["time"]) if t[:13] >= now_iso), 0))
+    today_s = cur["time"][:10]
+    rows = []
+    for i in range(start, min(start + 36, len(h["time"]))):
+        t = h["time"][i]
+        rows.append({"time": t[-5:], "hour": int(t[11:13]), "day": 0 if t[:10] == today_s else 1, "temp": round(h["temperature_2m"][i], 1), "pop": h["precipitation_probability"][i],
+                     "mm": h["precipitation"][i], "text": describe(h["weather_code"][i], h["is_day"][i])["text"], "humidity": h["relative_humidity_2m"][i]})
+    out["hourly"] = [{k: r[k] for k in ("time", "temp", "pop", "mm", "text", "humidity")} for r in rows[:24]]
+    out["commute"] = _commute(rows, int(cur["time"][11:13]))
+    out["season"] = season_note(datetime.now(ZoneInfo(TZ)).month)
+    return out
 
-    # days 2-5: honest raw consensus (our calibration is trained for day 1 only)
+
+_city_cache: dict = {}  # key -> (timestamp, prediction dict, nwp frame, today)
+
+
+def _known_city(lat: float, lon: float):
+    for k, (nm, la, lo) in CITIES.items():
+        if abs(la - lat) < 0.02 and abs(lo - lon) < 0.02:
+            return k
+    return None
+
+
+def forecast(lat: float, lon: float, name=None) -> dict:
+    """The CALIBRATED part (tomorrow's rain, high and low, 4-day outlook). A known city reuses the batched island result, so one batched call warms all 16."""
+    if not in_region(lat, lon):
+        raise ForecastError("This forecast is trained and tested for Sri Lanka only. Please choose a location inside Sri Lanka.")
+    lat, lon = round(float(lat), 3), round(float(lon), 3)
+    key = _known_city(lat, lon)
+    hit = _city_cache.get(key) if key else None
+    if hit and time.time() - hit[0] < 1800:
+        out, nd, today = dict(hit[1]), hit[2], hit[3]
+        out["location"] = {**out["location"], "name": name or out["location"]["name"]}
+    else:
+        obs, nwp, extra = _fetch_forecast_inputs([lat], [lon])
+        out, nd, today = _predict(obs[0], nwp[0], lat, lon, name, extra[0])
+        if key:
+            _city_cache[key] = (time.time(), out, nd, today)
+    out["outlook"] = _outlook(nd, today)
+    out["track_record"] = track_record_summary()
+    return out
+
+
+def _outlook(nd: pd.DataFrame, today: pd.Timestamp) -> list:
+    """Days 2-5: honest raw consensus (replaced by calibrated odds once the lead models are shipped)."""
     outlook = []
     for d in range(2, 6):
         r = nd[nd["date"] == today + pd.Timedelta(days=d)]
@@ -278,31 +399,22 @@ def forecast(lat: float, lon: float, name=None) -> dict:
         outlook.append({"date": str((today + pd.Timedelta(days=d)).date()), "expected_mm": round(float(np.mean(mm)), 1),
                         "models_agree": int(sum(v >= F.WET_MM for v in mm)), "models": len(mm),
                         "high": round(float(np.mean(hi_t)), 1) if hi_t else None, "low": round(float(np.mean(lo_t)), 1) if lo_t else None})
-    out["outlook"] = outlook
+    return outlook
 
-    # right now + the next 24 hours (raw Open-Meteo, shown as such)
-    cur = live["current"]
-    desc = describe(cur["weather_code"], cur.get("is_day", 1))
-    out["now"] = {"temp": round(cur["temperature_2m"]), "feels": round(cur["apparent_temperature"]), "humidity": round(cur["relative_humidity_2m"]),
-                  "clouds": round(cur["cloud_cover"]), "wind_kmh": round(cur["wind_speed_10m"], 1), "gust_kmh": round(cur["wind_gusts_10m"], 1),
-                  "pressure": round(cur["pressure_msl"]), "visibility_km": round((cur.get("visibility") or 0) / 1000, 1), "mm": cur.get("precipitation", 0),
-                  "time": cur["time"][-5:], "description": desc["text"], "scene": desc["scene"], "night": desc["night"],
-                  "high_today": round(live["daily"]["temperature_2m_max"][0]), "low_today": round(live["daily"]["temperature_2m_min"][0])}
-    out["sun"] = {"sunrise": live["daily"]["sunrise"][0][-5:], "sunset": live["daily"]["sunset"][0][-5:]}
-    h = live["hourly"]
-    now_iso = cur["time"][:13]
-    start = max(0, next((i for i, t in enumerate(h["time"]) if t[:13] >= now_iso), 0))
-    out["hourly"] = [{"time": h["time"][i][-5:], "temp": round(h["temperature_2m"][i], 1), "pop": h["precipitation_probability"][i], "mm": h["precipitation"][i],
-                      "text": describe(h["weather_code"][i], h["is_day"][i])["text"], "humidity": h["relative_humidity_2m"][i]}
-                     for i in range(start, min(start + 24, len(h["time"])))]
-    out["season"] = season_note(today.month)
-    out["track_record"] = track_record_summary()
-    return out
+
+DISTRICT = {"colombo": "Colombo", "kandy": "Kandy", "galle": "Galle", "jaffna": "Jaffna", "negombo": "Gampaha (Negombo area)", "anuradhapura": "Anuradhapura",
+            "trincomalee": "Trincomalee", "batticaloa": "Batticaloa", "matara": "Matara", "nuwara_eliya": "Nuwara Eliya", "kurunegala": "Kurunegala", "ratnapura": "Ratnapura",
+            "badulla": "Badulla", "hambantota": "Hambantota", "vavuniya": "Vavuniya", "puttalam": "Puttalam"}
+
+
+def _risk(heavy: float, mm: float) -> str:
+    return "Very high" if (heavy >= 0.7 or mm >= 60) else "High" if (heavy >= 0.5 or mm >= 35) else "Moderate" if heavy >= 0.3 else "Low"
 
 
 def island() -> dict:
-    """Tomorrow's calibrated rain chance for every trained city at once (batched: 2 weather calls in total)."""
-    key = ("island", datetime.now(ZoneInfo(TZ)).strftime("%Y-%m-%d-%H") + str(datetime.now().minute // 30))
+    """Tomorrow's calibrated rain chance for every trained city at once (batched), plus the heavy-rain watch."""
+    now_local = datetime.now(ZoneInfo(TZ))
+    key = ("island", now_local.strftime("%Y-%m-%d-%H") + str(now_local.minute // 30))
     hit = _cache.get(key)
     if hit:
         return hit[1]
@@ -312,14 +424,32 @@ def island() -> dict:
     cities = []
     for k, o, n, e in zip(keys, obs, nwp, extra):
         try:
-            r, _, _ = _predict(o, n, CITIES[k][1], CITIES[k][2], CITIES[k][0], e)
+            r, nd, today = _predict(o, n, CITIES[k][1], CITIES[k][2], CITIES[k][0], e)
         except ForecastError:
             continue
+        _city_cache[k] = (time.time(), r, nd, today)
         cities.append({"key": k, "name": CITIES[k][0], "lat": CITIES[k][1], "lon": CITIES[k][2], "p": r["rain"]["probability"],
-                       "heavy": r["rain"]["heavy_probability"], "mm": r["rain"]["expected_mm"], "high": r["high"]["value"]})
-    out = {"cities": cities}
+                       "heavy": r["rain"]["heavy_probability"], "mm": r["rain"]["expected_mm"], "high": r["high"]["value"],
+                       "area": DISTRICT.get(k, CITIES[k][0]), "risk": _risk(r["rain"]["heavy_probability"], r["rain"]["expected_mm"])})
+    order = {"Very high": 0, "High": 1, "Moderate": 2, "Low": 3}
+    out = {"cities": cities, "watch": sorted(cities, key=lambda c: (order[c["risk"]], -c["heavy"]))[:16],
+           "links": [{"label": "Disaster Management Centre (official warnings)", "url": "https://www.dmc.gov.lk/"}],
+           "disclaimer": "Covers 16 places only, not all 25 districts. This is a model estimate, not an official warning: follow the Disaster Management Centre and the Department of Meteorology."}
     _cache[key] = (time.time(), out)
     return out
+
+
+def prewarm(interval: int = 1500) -> None:
+    """Keep the island (and so every known city's calibrated forecast) fresh in the background. Does not help a cold start: the browser-side cache does."""
+    def loop():
+        while True:
+            try:
+                island()
+            except Exception:  # never let the warmer die
+                pass
+            time.sleep(interval)
+    t = threading.Thread(target=loop, name="forecast-prewarm", daemon=True)
+    t.start()
 
 
 def track_record_summary() -> dict:
