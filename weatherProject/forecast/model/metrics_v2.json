@@ -1,0 +1,129 @@
+{
+  "data": {
+    "dev_rows": 14528,
+    "holdout_rows": 1312,
+    "dev_to": "2026-08-28",
+    "holdout_from": "2026-09-01",
+    "holdout_to": "2026-11-21",
+    "models": [
+      "ecmwf_ifs025",
+      "gfs_global",
+      "icon_global",
+      "jma_gsm",
+      "gem_global",
+      "meteofrance_arpege_world",
+      "cma_grapes_global"
+    ]
+  },
+  "rain": {
+    "C": 0.03,
+    "holdout2_brier": 0.1077575722972544,
+    "holdout2_ci95": [
+      0.08365268020706772,
+      0.13507476413879538
+    ],
+    "v1_same_window_brier": 0.11370919257942629,
+    "climatology_brier": 0.22941804763309726,
+    "diff_v2_minus_v1": -0.005951620282171888,
+    "diff_ci95": [
+      -0.00936312370621963,
+      -0.0021457561093085483
+    ],
+    "holdout2_auc": 0.9180624633808626,
+    "dev_oof_brier": 0.11733895479774396,
+    "dev_oof_auc": 0.9141091468260665,
+    "reliability": [
+      {
+        "said": 0.05,
+        "happened": 0.038,
+        "n": 3731
+      },
+      {
+        "said": 0.164,
+        "happened": 0.177,
+        "n": 2224
+      },
+      {
+        "said": 0.321,
+        "happened": 0.334,
+        "n": 1276
+      },
+      {
+        "said": 0.476,
+        "happened": 0.506,
+        "n": 1068
+      },
+      {
+        "said": 0.626,
+        "happened": 0.633,
+        "n": 1132
+      },
+      {
+        "said": 0.781,
+        "happened": 0.78,
+        "n": 1389
+      },
+      {
+        "said": 0.946,
+        "happened": 0.938,
+        "n": 3708
+      }
+    ]
+  },
+  "heavy": {
+    "C": 0.1,
+    "holdout2_brier": 0.1183711609006844,
+    "holdout2_ci95": [
+      0.08826915808111943,
+      0.1506626622175683
+    ],
+    "v1_same_window_brier": 0.12672343116206397,
+    "climatology_brier": 0.21195369869525307,
+    "diff_v2_minus_v1": -0.008352270261379566,
+    "diff_ci95": [
+      -0.01610299724935816,
+      -0.0015426495035363913
+    ],
+    "holdout2_auc": 0.904315956657576,
+    "dev_oof_brier": 0.08205147983522189,
+    "dev_oof_auc": 0.9234560653854295,
+    "reliability": [
+      {
+        "said": 0.021,
+        "happened": 0.02,
+        "n": 8978
+      },
+      {
+        "said": 0.165,
+        "happened": 0.185,
+        "n": 1759
+      },
+      {
+        "said": 0.32,
+        "happened": 0.345,
+        "n": 966
+      },
+      {
+        "said": 0.472,
+        "happened": 0.445,
+        "n": 843
+      },
+      {
+        "said": 0.623,
+        "happened": 0.584,
+        "n": 748
+      },
+      {
+        "said": 0.77,
+        "happened": 0.746,
+        "n": 677
+      },
+      {
+        "said": 0.92,
+        "happened": 0.946,
+        "n": 557
+      }
+    ]
+  },
+  "skill_rain_vs_climatology": 0.5303003690904542
+}

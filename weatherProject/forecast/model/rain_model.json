@@ -1,0 +1,103 @@
+{
+  "sklearn": "1.7.0",
+  "rain_features": [
+    "nwp_precip_mean_log",
+    "nwp_wet_frac",
+    "nwp_rh_mean",
+    "nwp_pressure_delta"
+  ],
+  "temp_features": [
+    "lat",
+    "lon",
+    "elev",
+    "tmax",
+    "tmin",
+    "tmean",
+    "precip",
+    "rh",
+    "pressure",
+    "dew",
+    "cloud",
+    "gust",
+    "rad",
+    "wind_sin",
+    "wind_cos",
+    "range",
+    "dew_spread",
+    "d_pressure",
+    "d_rh",
+    "d_tmax",
+    "precip_l1",
+    "precip_3d",
+    "precip_7d",
+    "precip_30d",
+    "wet_days_7",
+    "doy_sin",
+    "doy_cos",
+    "nwp_precip_mean",
+    "nwp_precip_max",
+    "nwp_precip_min",
+    "nwp_wet_frac",
+    "nwp_tmax_mean",
+    "nwp_tmin_mean",
+    "nwp_rh_mean",
+    "nwp_gust_mean",
+    "nwp_pressure_delta",
+    "nwp_tmax_delta",
+    "nwp_precip_mean_log"
+  ],
+  "targets": {
+    "rain": {
+      "mean": [
+        1.3030530782174883,
+        0.4303037932192011,
+        80.61599827723155,
+        -0.19521004671589945
+      ],
+      "scale": [
+        1.031415427990199,
+        0.40938934910814156,
+        7.391382851196684,
+        0.8957739663803079
+      ],
+      "coef": [
+        1.9567203194528602,
+        -0.04264112909518309,
+        0.5716545420689706,
+        -0.007430111594391185
+      ],
+      "intercept": -0.0007475686543591475
+    },
+    "heavy": {
+      "mean": [
+        1.3030530782174883,
+        0.4303037932192011,
+        80.61599827723155,
+        -0.19521004671589945
+      ],
+      "scale": [
+        1.031415427990199,
+        0.40938934910814156,
+        7.391382851196684,
+        0.8957739663803079
+      ],
+      "coef": [
+        1.6426592140994565,
+        0.1502650003084753,
+        0.8066025086558709,
+        0.06281694680292509
+      ],
+      "intercept": -2.716178286129173
+    }
+  },
+  "interval80": {
+    "tmax": [
+      -1.0791255267792068,
+      1.0678035406494482
+    ],
+    "tmin": [
+      -0.7516068987031502,
+      0.7788950293958204
+    ]
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "protocol": {
+    "folds": 6,
+    "gap": 3,
+    "inner_folds": 4,
+    "holdout_frac": 0.2,
+    "rows": 366,
+    "dev_rows": 293
+  },
+  "results": {
+    "humidity-only logistic": {
+      "family": "baseline",
+      "complexity": 1,
+      "brier": 0.13265003157126812,
+      "brier_se": 0.018611484403543464,
+      "logloss": 0.4377485637587602,
+      "auc": 0.7255821958239205,
+      "ap": 0.5556204390945446,
+      "recall": 0.4012260887260887,
+      "precision": 0.4454545454545455,
+      "accuracy": 0.7706916099773243,
+      "brier_baseline": 0.1568624174670464
+    },
+    "original RF (7 feats, label-encoded wind)": {
+      "family": "baseline",
+      "complexity": 9,
+      "brier": 0.1295145946410479,
+      "brier_se": 0.01730437611657223,
+      "logloss": 0.46197655035651075,
+      "auc": 0.7822573714314786,
+      "ap": 0.5432157914411283,
+      "recall": 0.484025234025234,
+      "precision": 0.5505268199233716,
+      "accuracy": 0.7912264196458726,
+      "brier_baseline": 0.15755662759854946
+    },
+    "logistic, 6 numeric": {
+      "family": "serveable",
+      "complexity": 2,
+      "brier": 0.11652743225794061,
+      "brier_se": 0.018707391121111222,
+      "logloss": 0.37920806140568547,
+      "auc": 0.8101756461131461,
+      "ap": 0.6215625535958673,
+      "recall": 0.5238858363858364,
+      "precision": 0.5626642771804062,
+      "accuracy": 0.8013656703816278,
+      "brier_baseline": 0.15755662759854946
+    },
+    "logistic, +wind sin/cos": {
+      "family": "serveable",
+      "complexity": 3,
+      "brier": 0.11675989313897957,
+      "brier_se": 0.01942884993859727,
+      "logloss": 0.381744362034322,
+      "auc": 0.7961271284931999,
+      "ap": 0.6045464787378473,
+      "recall": 0.5110653235653235,
+      "precision": 0.5545334295334295,
+      "accuracy": 0.8010822236696097,
+      "brier_baseline": 0.15768202238444878
+    },
+    "logistic, physical features": {
+      "family": "serveable",
+      "complexity": 4,
+      "brier": 0.1193233162043739,
+      "brier_se": 0.018934060809685876,
+      "logloss": 0.38946732316073795,
+      "auc": 0.7758174860853432,
+      "ap": 0.5753380284733357,
+      "recall": 0.4517704517704518,
+      "precision": 0.6444805194805195,
+      "accuracy": 0.84905557967868,
+      "brier_baseline": 0.15768202238444878
+    },
+    "shallow RF, physical features": {
+      "family": "serveable",
+      "complexity": 6,
+      "brier": 0.12395496686712165,
+      "brier_se": 0.018438638666914565,
+      "logloss": 0.405804540093017,
+      "auc": 0.7971676719444577,
+      "ap": 0.5831795655104388,
+      "recall": 0.4572903947903948,
+      "precision": 0.4174242424242424,
+      "accuracy": 0.8041880759395958,
+      "brier_baseline": 0.15768202238444878
+    },
+    "regularised HGB, physical features": {
+      "family": "serveable",
+      "complexity": 7,
+      "brier": 0.1301512469663467,
+      "brier_se": 0.018918329784441947,
+      "logloss": 0.428715678090373,
+      "auc": 0.7753106144847216,
+      "ap": 0.5671502300576295,
+      "recall": 0.49707468457468457,
+      "precision": 0.27735690235690236,
+      "accuracy": 0.7251742895739857,
+      "brier_baseline": 0.15768202238444878
+    },
+    "logistic, physical + history": {
+      "family": "history",
+      "complexity": 5,
+      "brier": 0.099844100472348,
+      "brier_se": 0.018500425409388697,
+      "logloss": 0.3333533822167603,
+      "auc": 0.8556907791282792,
+      "ap": 0.7177015248862159,
+      "recall": 0.5710470085470085,
+      "precision": 0.6644869750132908,
+      "accuracy": 0.851455830559174,
+      "brier_baseline": 0.15590857977826425
+    },
+    "shallow RF, physical + history": {
+      "family": "history",
+      "complexity": 8,
+      "brier": 0.10530646618148758,
+      "brier_se": 0.017242061939642058,
+      "logloss": 0.35614749166872145,
+      "auc": 0.837393567081067,
+      "ap": 0.7170012385619836,
+      "recall": 0.5357905982905983,
+      "precision": 0.8095238095238096,
+      "accuracy": 0.8827178921213875,
+      "brier_baseline": 0.15590857977826425
+    }
+  }
+}

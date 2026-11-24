@@ -1,0 +1,224 @@
+{
+  "data": {
+    "cities": [
+      "anuradhapura",
+      "badulla",
+      "batticaloa",
+      "colombo",
+      "galle",
+      "hambantota",
+      "jaffna",
+      "kandy",
+      "kurunegala",
+      "matara",
+      "negombo",
+      "nuwara_eliya",
+      "puttalam",
+      "ratnapura",
+      "trincomalee",
+      "vavuniya"
+    ],
+    "dev_rows": 9280,
+    "holdout_rows": 6608,
+    "holdout_from": "2025-10-01",
+    "holdout_to": "2026-11-21"
+  },
+  "rain": {
+    "holdout": {
+      "brier": 0.12461936261026683,
+      "skill_vs_climatology": 0.5022448504613567,
+      "auc": 0.9039754751546774,
+      "pr_auc": 0.9039325809644637,
+      "logloss": 0.39317118205730694
+    },
+    "brier_ci95": [
+      0.11156093978132399,
+      0.13636279578581367
+    ],
+    "climatology_brier": 0.22304951507625848,
+    "persistence_brier": 0.1843660858914363,
+    "dev_base_rate": 0.47435344827586207,
+    "holdout_base_rate": 0.4942493946731235,
+    "C": 1.0,
+    "reliability": [
+      {
+        "said": 0.057,
+        "happened": 0.05,
+        "n": 1360
+      },
+      {
+        "said": 0.163,
+        "happened": 0.148,
+        "n": 1053
+      },
+      {
+        "said": 0.321,
+        "happened": 0.348,
+        "n": 598
+      },
+      {
+        "said": 0.476,
+        "happened": 0.465,
+        "n": 482
+      },
+      {
+        "said": 0.63,
+        "happened": 0.618,
+        "n": 500
+      },
+      {
+        "said": 0.78,
+        "happened": 0.745,
+        "n": 682
+      },
+      {
+        "said": 0.942,
+        "happened": 0.928,
+        "n": 1933
+      }
+    ]
+  },
+  "heavy": {
+    "holdout": {
+      "brier": 0.09468693357984742,
+      "skill_vs_climatology": 0.4264548613349135,
+      "auc": 0.9097542159400049,
+      "pr_auc": 0.7330331386633061,
+      "logloss": 0.29609575258904974
+    },
+    "brier_ci95": [
+      0.07941838616131223,
+      0.11063317977843129
+    ],
+    "climatology_brier": 0.14999974961536658,
+    "persistence_brier": 0.12667139713044667,
+    "dev_base_rate": 0.1880387931034483,
+    "holdout_base_rate": 0.20792978208232446,
+    "C": 0.1,
+    "reliability": [
+      {
+        "said": 0.022,
+        "happened": 0.02,
+        "n": 3701
+      },
+      {
+        "said": 0.165,
+        "happened": 0.191,
+        "n": 858
+      },
+      {
+        "said": 0.323,
+        "happened": 0.332,
+        "n": 554
+      },
+      {
+        "said": 0.473,
+        "happened": 0.441,
+        "n": 456
+      },
+      {
+        "said": 0.622,
+        "happened": 0.604,
+        "n": 419
+      },
+      {
+        "said": 0.773,
+        "happened": 0.731,
+        "n": 386
+      },
+      {
+        "said": 0.915,
+        "happened": 0.923,
+        "n": 234
+      }
+    ]
+  },
+  "tmax": {
+    "mae": 0.7453471629259307,
+    "mae_ci95": [
+      0.7130029568993322,
+      0.7804372161421026
+    ],
+    "raw_forecast_mae": 0.9118593623890235,
+    "persistence_mae": 0.9350181598062954,
+    "interval80": [
+      -1.052178107054806,
+      1.0290247981961358
+    ],
+    "interval80_holdout_coverage": 0.7451573849878934
+  },
+  "tmin": {
+    "mae": 0.5567328215219453,
+    "mae_ci95": [
+      0.5349012858415981,
+      0.5822110067077934
+    ],
+    "raw_forecast_mae": 0.7051805891848265,
+    "persistence_mae": 0.6027391041162228,
+    "interval80": [
+      -0.7184336078160644,
+      0.7314480691443844
+    ],
+    "interval80_holdout_coverage": 0.7103510895883777
+  },
+  "unseen_cities": [
+    {
+      "cities": [
+        "anuradhapura",
+        "galle",
+        "kurunegala",
+        "puttalam"
+      ],
+      "brier_unseen": 0.11824438397791397,
+      "brier_seen": 0.11791564448789608,
+      "tmax_mae_unseen": 0.8240067957120387,
+      "tmax_mae_raw": 0.9045399515738498
+    },
+    {
+      "cities": [
+        "badulla",
+        "hambantota",
+        "matara",
+        "ratnapura"
+      ],
+      "brier_unseen": 0.1311454110145491,
+      "brier_seen": 0.1307570582638971,
+      "tmax_mae_unseen": 0.9129482835167317,
+      "tmax_mae_raw": 0.9638619854721548
+    },
+    {
+      "cities": [
+        "batticaloa",
+        "jaffna",
+        "negombo",
+        "trincomalee"
+      ],
+      "brier_unseen": 0.11693148556610974,
+      "brier_seen": 0.11548914901016898,
+      "tmax_mae_unseen": 0.7296775934677505,
+      "tmax_mae_raw": 0.8791969330104924
+    },
+    {
+      "cities": [
+        "colombo",
+        "kandy",
+        "nuwara_eliya",
+        "vavuniya"
+      ],
+      "brier_unseen": 0.133442905106036,
+      "brier_seen": 0.13431559867910514,
+      "tmax_mae_unseen": 0.756080436546248,
+      "tmax_mae_raw": 0.8998385794995966
+    }
+  ],
+  "deployed_interval80": {
+    "tmax": [
+      -1.0791255267792068,
+      1.0678035406494482
+    ],
+    "tmin": [
+      -0.7516068987031502,
+      0.7788950293958204
+    ]
+  }
+}

@@ -1,0 +1,145 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weather Forecast · Sri Lanka</title>
+  <meta name="description" content="Tomorrow's rain chance and temperature for any place in Sri Lanka, from seven weather models corrected by a machine-learning model that publishes its own scorecard.">
+  <meta name="theme-color" content="#0b1013">
+  <link rel="icon" href="{% static 'img/site-pic.ico' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+  <link rel="stylesheet" href="{% static 'css/weather.css' %}">
+</head>
+<body>
+<a class="skip" href="#panel">Skip to forecast</a>
+
+<main class="shell is-loading" id="shell" data-static="{% static '' %}">
+  <!-- Condition photo: a blurred preview shows instantly, the sharp WebP fades in over it -->
+  <div class="sky" id="sky" aria-hidden="true"><img id="sky-img" alt="" decoding="async"></div>
+  <div class="sky-shade" aria-hidden="true"></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+
+  <aside class="side" aria-label="Place and current conditions">
+    <div class="side-top">
+      <button class="round" id="btn-save" type="button" title="Save this place" aria-label="Save this place">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 3h12v18l-6-4-6 4zM12 7v6M9 10h6"/></svg>
+      </button>
+      <button class="pill" id="btn-settings" type="button" aria-expanded="false" aria-controls="drawer">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h10M18 7h2M4 17h2M10 17h10M14 7a2 2 0 1 0 0 .01M6 17a2 2 0 1 0 0 .01"/></svg> Settings
+      </button>
+    </div>
+
+    <form class="search" id="search-form" role="search" autocomplete="off">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M7 18h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.5 4.3 4.3 0 0 0 7 18z"/></svg>
+      <label class="sr" for="q">Search a place in Sri Lanka</label>
+      <input id="q" type="text" placeholder="ex. Colombo" aria-controls="suggest" aria-autocomplete="list">
+      <button type="submit" aria-label="Search"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></svg></button>
+      <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+    </form>
+    <button class="locate" id="btn-locate" type="button">◎ Use my location</button>
+
+    <div class="now">
+      <h2 class="now-temp"><span id="n-temp">--</span>°</h2>
+      <p class="now-feels">Feels like: <span id="n-feels">--</span>°</p>
+      <ul class="now-list">
+        <li><p><b id="n-hum">--</b>%</p><span>of humidity</span></li>
+        <li><p><b id="n-cloud">--</b>%</p><span>of Clouds</span></li>
+        <li><p><b id="n-wind">--</b><i>km/h</i></p><span>of wind</span></li>
+      </ul>
+    </div>
+    <p class="season" id="season"></p>
+  </aside>
+
+  <section class="main" id="panel">
+    <p class="eyebrow">Weather Forecast</p>
+    <h1 class="title" id="title">Loading…</h1>
+    <p class="where"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg><span id="where">—</span></p>
+    <p class="sun"><span>Sunrise: <b id="sunrise">--</b></span><span>Sunset: <b id="sunset">--</b></span></p>
+    <p class="facts" id="facts"></p>
+
+    <div class="tabs" role="tablist" aria-label="Forecast views">
+      <button role="tab" aria-selected="true" aria-controls="v-now" id="t-now" data-tab="now">Next 24 hours</button>
+      <button role="tab" aria-selected="false" aria-controls="v-tomorrow" id="t-tomorrow" data-tab="tomorrow">Tomorrow</button>
+      <button role="tab" aria-selected="false" aria-controls="v-week" id="t-week" data-tab="week">4 days</button>
+      <button role="tab" aria-selected="false" aria-controls="v-island" id="t-island" data-tab="island">Island map</button>
+      <button role="tab" aria-selected="false" aria-controls="v-proof" id="t-proof" data-tab="proof">Proof</button>
+    </div>
+
+    <div class="views">
+      <section class="view" id="v-now" role="tabpanel" aria-labelledby="t-now">
+        <p class="outlook" id="outlook-line"></p>
+        <div class="strip" id="strip"><canvas id="curve" aria-hidden="true"></canvas><ul id="strip-list"></ul></div>
+      </section>
+
+      <section class="view" id="v-tomorrow" role="tabpanel" aria-labelledby="t-tomorrow" hidden>
+        <div class="tom">
+          <div class="ring" id="ring" role="img"><div><b id="ring-p">--</b><span>chance of rain</span></div></div>
+          <div class="tom-text">
+            <h2 id="tom-head">—</h2>
+            <p id="tom-sub"></p>
+            <div class="kv" id="kv"></div>
+          </div>
+        </div>
+        <div class="two">
+          <div class="glass"><h3>Why this forecast</h3><ul class="why" id="why"></ul></div>
+          <div class="glass"><h3>What each weather model says <small id="models-n"></small></h3><div class="models" id="models"></div></div>
+        </div>
+        <div class="actions"><button class="pill" id="btn-share" type="button">Save as picture</button></div>
+      </section>
+
+      <section class="view" id="v-week" role="tabpanel" aria-labelledby="t-week" hidden>
+        <div class="week" id="week"></div>
+        <p class="fine">Days 2 to 5 are the average of eight weather models. Our correction is trained and tested for tomorrow only, so these are not presented as calibrated odds.</p>
+      </section>
+
+      <section class="view" id="v-island" role="tabpanel" aria-labelledby="t-island" hidden>
+        <div class="island">
+          <div class="map" id="map" aria-label="Map of Sri Lanka with tomorrow's rain chance for 16 cities"></div>
+          <ol class="rank" id="rank"></ol>
+        </div>
+        <p class="fine">Tomorrow's chance of 2.5 mm or more of rain. Click a place to open it. One model forecasts every place.</p>
+      </section>
+
+      <section class="view" id="v-proof" role="tabpanel" aria-labelledby="t-proof" hidden>
+        <div class="stats" id="stats"></div>
+        <div class="glass"><h3>When we said X% chance of rain, how often did it rain?</h3><div class="rel" id="rel"></div></div>
+        <div class="actions"><button class="pill" id="load-score" type="button">Show the last 30 days for this place</button></div>
+        <div class="score" id="score" hidden></div>
+        <details class="how">
+          <summary>How is this built, and what are its limits?</summary>
+          <ul>
+            <li><b>One model for the whole country.</b> It learned from 16 places together; when whole cities were hidden from training it forecast them just as well.</li>
+            <li><b>Seven weather models, each weighed.</b> Simply averaging more models did not help. Letting the model learn how far to trust each one did, a modest but reliable gain on rain.</li>
+            <li><b>A correction, not a rival to physics.</b> Weather models do the simulation. Ours weighs them, fixes their habits and says how sure to be.</li>
+            <li><b>Honest testing.</b> The scores come from 14 months of days the model never saw. Accuracy alone would flatter any rain model, so we show how well the percentages match reality.</li>
+            <li><b>Limits.</b> "Rain" means 2.5 mm or more in a day. "What happened" is a reanalysis estimate, not a rain gauge. Rain on one street can differ from the area average.</li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </section>
+
+  <div class="drawer-shade" id="shade" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Personal settings">
+    <div class="drawer-head"><b>Personal controls</b><button class="round" id="drawer-close" type="button" aria-label="Close settings">✕</button></div>
+    <section><h3>Saved locations</h3><ul class="favs" id="favs"></ul><button class="pill" id="fav-add" type="button">Save current place</button></section>
+    <section><h3>Personal alerts</h3>
+      <label class="check"><input type="checkbox" id="alert-on"> Notify me when tomorrow's rain chance for my first saved place reaches</label>
+      <label class="sel"><select id="alert-th" aria-label="Alert threshold"><option>50</option><option selected>60</option><option>70</option><option>80</option></select> %</label>
+      <p class="fine">Works when you open this page. Your saved places and settings are kept only in this browser.</p>
+    </section>
+  </aside>
+</main>
+
+<footer class="credit">
+  Weather data by <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including modified Copernicus ERA5 data and forecasts from ECMWF, NOAA/NCEP, DWD, JMA, ECCC, Météo-France and CMA. Not for safety-critical decisions: follow official warnings.
+  <a href="{% url 'classic' %}">Classic view</a>
+</footer>
+
+{{ cities|json_script:"cities-data" }}
+{{ track|json_script:"track-data" }}
+<script src="{% static 'js/weather.js' %}"></script>
+</body>
+</html>

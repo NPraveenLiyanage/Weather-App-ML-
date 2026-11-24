@@ -1,5 +1,10 @@
 # 🌦️ Weather App with ML Rain Prediction
 
+> **Update (branch `improve-model`):** the forecast was rebuilt. One model for all of Sri Lanka now corrects three real weather models and
+> publishes its own honest test results. See [ml/README.md](ml/README.md) for the method, the evidence and the limits. The older
+> single-station Random Forest described below is kept at `/classic/` and has a known weakness list in that document.
+
+
 A full-stack weather web application built with **Django** that delivers real-time weather data via the **OpenWeatherMap API** and uses a **Random Forest Classifier (scikit-learn)** trained on historical weather data to predict the probability of rain for the next day.
 
 ---

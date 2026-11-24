@@ -20,3 +20,6 @@ db.sqlite3
 .vscode/
 .idea/
 
+ml/data/
+ml/fetch.log
+ml/__pycache__/

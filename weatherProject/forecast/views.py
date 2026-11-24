@@ -116,9 +116,11 @@ def read_historical_data(filename):
 #Prepare data for training
 
 def prepare_data(data):
-    le = LabelEncoder() #create a labelEncounter instance 
+    le = LabelEncoder() #encoder for the wind direction ONLY (returned and used when predicting)
     data['WindGustDir'] = le.fit_transform(data['WindGustDir'])
-    data['RainTomorrow'] = le.fit_transform(data['RainTomorrow'])
+    # BUG FIX: the target used to be encoded with the SAME encoder, which re-fit it to ['No','Yes'], so the wind-direction
+    # lookup at prediction time always failed and every live prediction silently used wind direction -1.
+    data['RainTomorrow'] = LabelEncoder().fit_transform(data['RainTomorrow'])
 
     #define feature variable and target variables
     X = data[['MinTemp', 'MaxTemp', 'WindGustDir', 'WindGustSpeed', 'Humidity', 'Pressure', 'Temp']] #feature variables
@@ -344,3 +346,71 @@ def auto_location(request):
     except Exception:
         logging.exception('Unable to fetch weather data for auto location request')
         return JsonResponse({'error': 'Unable to determine your location'}, status=502)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# New forecast experience (calibrated multi-model forecast for Sri Lanka).  See forecast/predictor.py and ml/.
+# ---------------------------------------------------------------------------------------------------------------------
+from . import predictor  # noqa: E402
+
+
+def forecast_page(request):
+    cities = [{"key": k, "name": v[0], "lat": v[1], "lon": v[2]} for k, v in predictor.CITIES.items()]
+    return render(request, 'forecast.html', {"cities": cities, "track": predictor.track_record_summary()})
+
+
+def _coords(request):
+    try:
+        return float(request.GET["lat"]), float(request.GET["lon"])
+    except (KeyError, ValueError):
+        raise predictor.ForecastError("Missing or invalid coordinates.")
+
+
+def forecast_api(request):
+    try:
+        lat, lon = _coords(request)
+        data = predictor.forecast(lat, lon, request.GET.get("name") or None)
+    except predictor.ForecastError as exc:
+        return JsonResponse({"error": str(exc)}, status=422)
+    except Exception:
+        logging.exception("forecast failed")
+        return JsonResponse({"error": "Something went wrong while building the forecast."}, status=500)
+    return JsonResponse(data)
+
+
+def scorecard_api(request):
+    try:
+        lat, lon = _coords(request)
+        data = predictor.scorecard(lat, lon)
+    except predictor.ForecastError as exc:
+        return JsonResponse({"error": str(exc)}, status=422)
+    except Exception:
+        logging.exception("scorecard failed")
+        return JsonResponse({"error": "Something went wrong while building the scorecard."}, status=500)
+    return JsonResponse(data)
+
+
+def search_api(request):
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 2:
+        return JsonResponse({"results": []})
+    try:
+        r = requests.get("https://geocoding-api.open-meteo.com/v1/search",
+                         params={"name": q, "count": 8, "language": "en", "countryCode": "LK"}, timeout=10)
+        r.raise_for_status()
+        out = [{"name": x["name"], "region": x.get("admin1", ""), "lat": x["latitude"], "lon": x["longitude"]}
+               for x in r.json().get("results", []) if predictor.in_region(x["latitude"], x["longitude"])]
+    except Exception:
+        out = []
+    return JsonResponse({"results": out})
+
+
+def island_api(request):
+    try:
+        data = predictor.island()
+    except predictor.ForecastError as exc:
+        return JsonResponse({"error": str(exc)}, status=422)
+    except Exception:
+        logging.exception("island failed")
+        return JsonResponse({"error": "Something went wrong while building the island view."}, status=500)
+    return JsonResponse(data)
